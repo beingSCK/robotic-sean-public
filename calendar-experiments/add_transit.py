@@ -25,9 +25,8 @@ from googleapiclient.discovery import build
 from transit_calculator import get_transit_time, load_config
 
 
-# Calendar API scope - need write access to create events
-# TODO(scope): Change to 'calendar' (without .readonly) when ready to create events
-SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
+# Calendar API scope - write access to create events
+SCOPES = ['https://www.googleapis.com/auth/calendar']
 
 CREDENTIALS_FILE = 'credentials.json'
 TOKEN_FILE = 'token.json'
@@ -362,28 +361,24 @@ def write_dry_run_output(transit_events, filename='dry_run_output.json'):
 
 def insert_transit_events(service, transit_events):
     """Actually insert transit events into Google Calendar."""
-    # TODO(scope): This requires calendar write scope
-    # When implementing:
-    # 1. Change SCOPES to ['https://www.googleapis.com/auth/calendar']
-    # 2. Delete token.json to re-authenticate
-    # 3. Uncomment and implement the insertion code below
-
     print("\n" + "="*60)
     print("EXECUTE MODE - Creating calendar events")
     print("="*60)
 
-    raise NotImplementedError(
-        "Execute mode not yet implemented. "
-        "Need to change scope to 'calendar' (write access) and re-authenticate. "
-        "Use dry-run mode for now."
-    )
+    created_count = 0
+    for event in transit_events:
+        # Remove _metadata before inserting (not a Calendar API field)
+        event_body = {k: v for k, v in event.items() if not k.startswith('_')}
 
-    # Placeholder for actual implementation:
-    # for event in transit_events:
-    #     # Remove _metadata before inserting (not a Calendar API field)
-    #     event_body = {k: v for k, v in event.items() if not k.startswith('_')}
-    #     created = service.events().insert(calendarId='primary', body=event_body).execute()
-    #     print(f"Created: {created.get('summary')} - {created.get('htmlLink')}")
+        created = service.events().insert(
+            calendarId='primary',
+            body=event_body
+        ).execute()
+
+        print(f"Created: {created.get('summary')}")
+        created_count += 1
+
+    print(f"\n{created_count} transit events created!")
 
 
 def main():
@@ -394,6 +389,11 @@ def main():
         '--execute',
         action='store_true',
         help='Actually create events (default is dry-run)'
+    )
+    parser.add_argument(
+        '--force',
+        action='store_true',
+        help='Skip confirmation prompt (use with --execute)'
     )
     parser.add_argument(
         '--days',
@@ -432,6 +432,12 @@ def main():
         return
 
     if args.execute:
+        if not args.force:
+            print(f"\nAbout to create {len(transit_events)} transit events in Google Calendar.")
+            confirm = input("Proceed? [y/N] ")
+            if confirm.lower() != 'y':
+                print("Aborted.")
+                return
         insert_transit_events(service, transit_events)
     else:
         write_dry_run_output(transit_events)
