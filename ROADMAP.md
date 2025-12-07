@@ -24,7 +24,7 @@ You don't need to hit all four for every project. But having the ladder in mind 
 
 | Project | Status | Next Step | Public Output |
 |---------|--------|-----------|---------------|
-| Calendar Transit Tool | Phase 1 complete (stub mode) | Real Routes API integration | GitHub repo, LinkedIn post |
+| Calendar Transit Tool | Execute mode working (stub times) | Real Routes API integration | GitHub repo, LinkedIn post |
 | Investment DB | Schema created, emails waiting | Parse mbox, build pipeline | Blog post (after RAG working) |
 | Chatbot Rebuild | Reference material ready | Build our own agent loop | Demo + learning writeup |
 

@@ -24,15 +24,15 @@ You're one step away from a working tool. The psychological reward of seeing tra
 
 **Definition of Done:** `python add_transit.py` shows accurate travel times from Google Routes API.
 
-### Step 2: Execute Mode
+### Step 2: Execute Mode ✓
 
 **Tasks:**
-- Change OAuth scope from `calendar.readonly` to `calendar`
-- Delete `token.json`, re-authenticate
-- Implement `insert_transit_events()` function
-- Add safeguards (confirmation prompt, undo instructions)
+- [x] Change OAuth scope from `calendar.readonly` to `calendar`
+- [x] Delete `token.json`, re-authenticate
+- [x] Implement `insert_transit_events()` function
+- [x] Add safeguards (`--force` flag for confirmation prompt)
 
-**Definition of Done:** `python add_transit.py --execute` creates real transit events in your Google Calendar.
+**Definition of Done:** `python add_transit.py --execute` creates real transit events in your Google Calendar. ✓ DONE
 
 ### Public Output: GitHub + LinkedIn
 
