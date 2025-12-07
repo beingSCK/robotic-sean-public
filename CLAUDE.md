@@ -32,6 +32,8 @@ Reference material from n8n workflow exploration. Key file: `social-manager-agen
 
 **Commit messages:** Short subject line (~50 chars), optional body for context when helpful.
 
+**Work journal:** At the end of each session, update `work-journal/YYYY-MM-DD.md` with completed tasks, decisions made, things learned, and next steps. This folder is gitignored.
+
 ## Architecture Notes
 
 - **Documents table pattern:** All source materials (emails, PDFs) flow through a staging table with `needs_review` flag before structured data extraction
