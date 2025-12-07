@@ -36,7 +36,7 @@ Learning project to understand agent patterns by rebuilding a chatbot from scrat
 
 ## Conventions
 
-**Commit messages:** Short subject line (~50 chars), optional body for context when helpful.
+**Commit messages:** Short subject line (~50 chars), optional body for context when helpful. Do NOT include "Co-Authored-By" or other AI attribution in commit messages.
 
 **Work journal:** At the end of each session, update `work-journal/YYYY-MM-DD.md` with completed tasks, decisions made, things learned, and next steps. This folder is gitignored.
 
