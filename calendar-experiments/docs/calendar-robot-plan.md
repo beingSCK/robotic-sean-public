@@ -3,7 +3,7 @@
 ## Goal
 A Python script that automatically creates "transit" calendar events before and after meetings, using real travel time estimates from Google Maps Routes API.
 
-**Definition of Done:** Run the script → transit events appear in Google Calendar with correct times and grey color labels (colorId "8").
+**Definition of Done:** Run the script → transit events appear in Google Calendar with correct times and tomato color labels (colorId "11").
 
 **Why This Matters:** This exceeds what Gemini could do (it couldn't set event colors). It's a real tool you'll actually use.
 
@@ -19,7 +19,9 @@ A Python script that automatically creates "transit" calendar events before and 
 - [ ] Execute mode / calendar write (Phase 3)
 
 **Key decisions made:**
-- Transit colorId = "8" (grey), not "11" (red)
+- Transit colorId = "11" (tomato) — was "8" (grey) before color semantic update
+- Hold events (tentative/conditional) use colorId "8" (graphite) and are skipped
+- Travel/trip events use colorId "3" (grape)
 - Using Routes API (not Directions API, which went Legacy March 2025)
 - Config stored in `config.json` (gitignored)
 
@@ -33,7 +35,7 @@ A Python script that automatically creates "transit" calendar events before and 
 
 ### Output
 - New "transit" events inserted into your calendar
-- Grey color (colorId "8" — your transit label)
+- Tomato color (colorId "11" — transit label)
 - Names like "TRANSIT: Home → Gym" or "TRANSIT: Gym → Dinner"
 
 ---
@@ -73,10 +75,12 @@ calendar-experiments/
 **Skip transit events for an event if:**
 - [x] Event is between 12am–6am
 - [x] Event has no location
-- [x] Event is already a transit event (colorId = "8")
+- [x] Event is already a transit event (colorId = "11")
+- [x] Event is a "hold" event (colorId = "8" — graphite, tentative)
 - [x] Event has video call (check `conferenceData` or URL patterns)
 - [x] Location matches previous event (or home, for first event)
 - [x] All-day events (no specific time)
+- [x] Day is a "trip day" (detected via flights/stays)
 
 **Transit event logic:**
 - First event of day: add transit FROM home TO event
@@ -114,8 +118,9 @@ calendar-experiments/
 - [x] For each day, walk through events in order
 - [x] Apply filtering rules
 - [x] Calculate transit times
-- [x] Build transit event objects with correct colorId ("8")
+- [x] Build transit event objects with correct colorId ("11" = tomato)
 - [x] Dry-run mode: outputs to `dry_run_output.json`
+- [x] Trip detection: skips entire days when traveling
 - [ ] Execute mode: insert events via `service.events().insert()`
 
 ### 5. Test
@@ -162,7 +167,7 @@ calendar-experiments/
 event = {
     'summary': 'TRANSIT: Home → Meeting',
     'location': '1000 Union St, Brooklyn, NY',
-    'colorId': '8',  # grey = transit
+    'colorId': '11',  # tomato = transit
     'start': {'dateTime': '2025-01-15T09:00:00-05:00', 'timeZone': 'America/New_York'},
     'end': {'dateTime': '2025-01-15T09:35:00-05:00', 'timeZone': 'America/New_York'},
 }
@@ -173,10 +178,13 @@ service.events().insert(calendarId='primary', body=event).execute()
 
 ## Decisions Made
 
-1. **Transit colorId:** "8" (grey)
-2. **Days forward to process:** 7 (configurable via `--days`)
-3. **Buffer time:** Not yet implemented (v1 uses raw estimates)
-4. **Overlapping events:** Let them overlap for v1, user adjusts manually
+1. **Transit colorId:** "11" (tomato) — updated from "8" (grey)
+2. **Hold colorId:** "8" (graphite) — tentative events, skipped for transit
+3. **Travel colorId:** "3" (grape) — stays, hotels, trip markers
+4. **Days forward to process:** 7 (configurable via `--days`)
+5. **Buffer time:** Not yet implemented (v1 uses raw estimates)
+6. **Overlapping events:** Let them overlap for v1, user adjusts manually
+7. **Trip days:** Skip entire day when flights/stays detected
 
 ---
 

@@ -89,9 +89,13 @@ def should_skip_event(event, config):
         return True, "no location"
 
     # Skip if already a transit event (by colorId)
-    transit_color = config.get('transit_color_id', '8')
+    transit_color = config.get('transit_color_id', '11')
     if event.get('colorId') == transit_color:
         return True, "already a transit event"
+
+    # Skip "hold" events (colorId 8 = graphite) - conditional events not yet confirmed
+    if event.get('colorId') == '8':
+        return True, "hold event (graphite)"
 
     # Skip video calls
     if event.get('conferenceData'):
@@ -136,6 +140,60 @@ def group_events_by_day(events):
     return dict(by_day)
 
 
+def detect_trip_dates(events, home_airports=None):
+    """
+    Scan events to detect trip date ranges.
+
+    Returns a set of date strings (YYYY-MM-DD) that are "trip days"
+    where transit events should be skipped.
+
+    Detection methods:
+    1. Outbound flights (departing from home airports)
+    2. Stay events (hotel, airbnb - all-day events)
+    """
+    if home_airports is None:
+        home_airports = {'ewr', 'jfk', 'lga', 'newark', 'kennedy', 'laguardia'}
+
+    trip_dates = set()
+
+    for event in events:
+        summary = event.get('summary', '').lower()
+        location = event.get('location', '').lower()
+
+        # Method 1: Detect flights departing from home airports
+        flight_keywords = ['flight to', 'flight from', 'ua ', 'aa ', 'dl ', 'b6 ',
+                          'united', 'american', 'delta', 'jetblue', 'southwest']
+        is_flight = any(kw in summary for kw in flight_keywords)
+
+        if is_flight:
+            # Check if departing from home area
+            is_outbound = any(airport in location for airport in home_airports)
+            if is_outbound:
+                # Get flight date
+                flight_date = event['start'].get('dateTime', event['start'].get('date'))[:10]
+                trip_dates.add(flight_date)
+
+        # Method 2: Detect stay events (hotel, airbnb)
+        stay_keywords = ['stay at', 'hotel', 'airbnb', 'vrbo', 'accommodation']
+        is_stay = any(kw in summary for kw in stay_keywords)
+
+        if is_stay:
+            # Stay events are typically all-day events with 'date' field
+            start_date = event['start'].get('date')
+            end_date = event['end'].get('date')
+
+            if start_date and end_date:
+                # Add all dates in the stay range
+                current = datetime.datetime.strptime(start_date, '%Y-%m-%d')
+                end = datetime.datetime.strptime(end_date, '%Y-%m-%d')
+
+                while current < end:
+                    trip_dates.add(current.strftime('%Y-%m-%d'))
+                    current += datetime.timedelta(days=1)
+
+    return trip_dates
+
+
 def parse_datetime(dt_str):
     """Parse a datetime string from Google Calendar API."""
     # Format: 2025-01-15T09:00:00-05:00
@@ -173,12 +231,22 @@ def calculate_transit_events(events, config):
     """
     transit_events = []
     home_address = config.get('home_address', '1000 Union St, Brooklyn, NY')
-    transit_color = config.get('transit_color_id', '8')
+    transit_color = config.get('transit_color_id', '11')
+
+    # Detect trip dates upfront
+    trip_dates = detect_trip_dates(events)
+    if trip_dates:
+        print(f"\nDetected trip dates: {sorted(trip_dates)}")
 
     by_day = group_events_by_day(events)
 
     for date_str, day_events in sorted(by_day.items()):
         print(f"\n=== {date_str} ({len(day_events)} events) ===")
+
+        # Skip entire day if it's a trip day
+        if date_str in trip_dates:
+            print(f"  (Trip day - skipping transit events)")
+            continue
 
         previous_location = home_address
         previous_location_name = "Home"

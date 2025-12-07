@@ -41,8 +41,17 @@ To re-authenticate (required after scope changes), delete `token.json` and run a
 ## Key Configuration
 
 - Home address: 1000 Union St, Crown Heights, Brooklyn
-- Transit color: Grey (colorId "8")
 - Timezone: America/New_York
+
+### Calendar ColorId Semantics
+
+| ColorId | Name | Meaning |
+|---------|------|---------|
+| 8 | Graphite | "Holds" - conditional events, skipped for transit |
+| 11 | Tomato | Transit events |
+| 3 | Grape | Travel/Trip events (stays, hotels) |
+
+Events with colorId 8 are skipped when calculating transit (they're tentative holds, not confirmed).
 
 ## Files
 
