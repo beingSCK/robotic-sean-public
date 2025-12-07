@@ -28,6 +28,10 @@ Schema includes: entities, investments, documents (staging table for emails/PDFs
 ### n8n-agent-samples/
 Reference material from n8n workflow exploration. Key file: `social-manager-agent-unpacked.ts` - an n8n agent workflow translated to traditional TypeScript code, showing how agentic loops, tool definitions, and memory work under the hood.
 
+## Conventions
+
+**Commit messages:** Short subject line (~50 chars), optional body for context when helpful.
+
 ## Architecture Notes
 
 - **Documents table pattern:** All source materials (emails, PDFs) flow through a staging table with `needs_review` flag before structured data extraction

@@ -1,5 +1,8 @@
-# Large data directories
-investment-db-experiments/
+# Large data files in investment-db-experiments
+investment-db-experiments/*.mbox
+investment-db-experiments/*.zip
+investment-db-experiments/Takeout/
+investment-db-experiments/Takeout 2/
 
 # macOS
 .DS_Store
