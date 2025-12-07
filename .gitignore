@@ -1,0 +1,8 @@
+# Large data directories
+investment-db-experiments/
+
+# macOS
+.DS_Store
+
+# Other files to ignore
+Recovery codes github.txt
