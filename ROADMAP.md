@@ -24,9 +24,11 @@ You don't need to hit all four for every project. But having the ladder in mind 
 
 | Project | Status | Next Step | Public Output |
 |---------|--------|-----------|---------------|
-| Calendar Transit Tool | Phase 1 complete (stub mode) | Phase 2: Real Routes API | GitHub repo, LinkedIn post |
+| Calendar Transit Tool | Phase 1 complete (stub mode) | Real Routes API integration | GitHub repo, LinkedIn post |
 | Investment DB | Schema created, emails waiting | Parse mbox, build pipeline | Blog post (after RAG working) |
-| n8n Exploration | Jackie workflow unpacked | Reference material | Part of this roadmap |
+| Chatbot Rebuild | Reference material ready | Build our own agent loop | Demo + learning writeup |
+
+**Current focus:** Calendar Transit Tool (quick win to ship)
 
 ---
 

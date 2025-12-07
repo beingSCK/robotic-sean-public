@@ -116,21 +116,21 @@ This project is meatier and deserves a longer writeup:
 
 ---
 
-## Phase 3: Agent Wrapper
+## Phase 3: Agent Wrapper (Chatbot Rebuild)
 
 ### Why This Phase
-Once RAG is working, wrapping it in an "agent" is relatively straightforward. This is where the Jackie unpacking pays off—you now understand what's happening under the hood.
+Once RAG is working, wrapping it in an "agent" is relatively straightforward. The reference material in `chatbot-rebuild/` shows the pattern—now we build our own to truly understand it.
 
 ### Step 1: Basic Agent Loop
 
 **Tasks:**
-- Build the agentic while-loop (you've seen this in Jackie)
+- Build the agentic while-loop (reference: `chatbot-rebuild/social-manager-agent-unpacked.ts` lines 314-347)
 - Define tools: `search_investments(query)`, `get_transactions(investment_id)`, `summarize_document(doc_id)`
 - Connect to Claude or GPT-4 via API
 - Handle tool calls and responses
 
 **Conceptual learning:**
-- The agentic loop pattern (you already understand this from the unpacking)
+- The agentic loop pattern (reference material in `chatbot-rebuild/`)
 - Tool definition and parameter design
 - Prompt engineering for reliable tool use
 
@@ -139,7 +139,7 @@ Once RAG is working, wrapping it in an "agent" is relatively straightforward. Th
 ### Step 2: Memory and Session Management
 
 **Tasks:**
-- Add conversation memory (sliding window, like Jackie's)
+- Add conversation memory (sliding window pattern from reference)
 - Session persistence (save/resume conversations)
 - Export conversation summaries
 

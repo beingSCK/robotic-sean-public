@@ -15,18 +15,24 @@ See:
 
 ## Current Projects
 
+### calendar-experiments/
+Calendar Transit Robot — automatically creates "transit" events before/after meetings using Google Maps Routes API. Current priority: finish as a quick win.
+
+```bash
+cd calendar-experiments && python add_transit.py  # dry-run mode
+```
+
 ### investment-db-experiments/
 Investment portfolio tracker using SQLite. Goal: Parse emails from Google Takeout, build a RAG pipeline for natural language queries about investments.
 
 ```bash
-# Create the SQLite database with schema
 cd investment-db-experiments && python create_investment_db.py
 ```
 
 Schema includes: entities, investments, documents (staging table for emails/PDFs), transactions.
 
-### n8n-agent-samples/
-Reference material from n8n workflow exploration. Key file: `social-manager-agent-unpacked.ts` - an n8n agent workflow translated to traditional TypeScript code, showing how agentic loops, tool definitions, and memory work under the hood.
+### chatbot-rebuild/
+Learning project to understand agent patterns by rebuilding a chatbot from scratch. Contains reference material (`social-manager-agent-unpacked.ts`) showing the agentic loop pattern. Goal: recreate this functionality ourselves to deeply understand how agents work.
 
 ## Conventions
 
@@ -37,4 +43,4 @@ Reference material from n8n workflow exploration. Key file: `social-manager-agen
 ## Architecture Notes
 
 - **Documents table pattern:** All source materials (emails, PDFs) flow through a staging table with `needs_review` flag before structured data extraction
-- **Agent pattern reference:** The unpacked TypeScript file demonstrates the core agentic loop (lines 314-347): call LLM → execute tool calls → append results → repeat until done
+- **Agent pattern reference:** `chatbot-rebuild/social-manager-agent-unpacked.ts` demonstrates the core agentic loop (lines 314-347): call LLM → execute tool calls → append results → repeat until done
