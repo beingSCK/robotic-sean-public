@@ -1,0 +1,13 @@
+# Credentials - NEVER commit these
+credentials.json
+token.json
+config.json
+
+# Python
+__pycache__/
+*.pyc
+.env
+
+# Output files
+events_dump.json
+dry_run_output.json
