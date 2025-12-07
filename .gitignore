@@ -10,3 +10,6 @@ investment-db-experiments/Takeout 2/
 # Other files to ignore
 Recovery codes github.txt
 alias-for-sck-local-dropbox
+
+# Work journal (private session notes)
+work-journal/
