@@ -2,33 +2,31 @@
 
 A hearty dish featuring spiced lamb and chickpeas, slow-roasted confit tomatoes, and a punchy garlicky yogurt sauce.
 
-## Serves
-
-4 people generously, with extra yogurt sauce and confit tomatoes (+ flavored oil) to save for later. You can stretch to 6 by adding rice to the chickpea and lamb dish. For larger gatherings, double the recipe and cook the lamb + chickpea portion in batches.
+The amounts below cover 4 people generously, with extra yogurt sauce and confit tomatoes (+ flavored oil) to save for later. You can stretch to 6 by adding rice to the chickpea and lamb dish. For larger gatherings, double the recipe and cook the lamb + chickpea portion in batches.
 
 ---
 
 ## Shopping List
 
 ### Garlicky Yogurt Sauce
-- Greek Yogurt (full fat tastes better!)
-- Fresh Garlic (buy at least one full head, more is better)
-- Lemon (fresh or pre-squeezed juice - either works)
+- [ ] Greek Yogurt (full fat tastes better!)
+- [ ] Fresh Garlic (buy at least one full head, more is better)
+- [ ] Lemon (fresh or pre-squeezed juice - either works)
 
 ### Confit Tomatoes
-- Lots of olive oil (look for a big can)
-- Organic vine-ripened tomatoes (~10, smaller tomatoes still on the vine preferred)
-- Fresh Rosemary
-- Fresh Thyme
+- [ ] Lots of olive oil (look for a big can)
+- [ ] Organic vine-ripened tomatoes (~10, smaller tomatoes still on the vine preferred)
+- [ ] Fresh Rosemary
+- [ ] Fresh Thyme
 
 ### Lamb (or alt protein) + Chickpeas
-- 1 lb ground lamb (plant-based ground works great too)
-- ~32 oz canned chickpeas, ideally organic (one large or two small cans)
-- Cumin Seed (not ground!)
-- Fresh Garlic (way better than powder or pre-peeled)
+- [ ] 1 lb ground lamb (plant-based ground works great too)
+- [ ] ~32 oz canned chickpeas, ideally organic (one large or two small cans)
+- [ ] Cumin Seed (not ground!)
+- [ ] Fresh Garlic (way better than powder or pre-peeled)
 
 ### Vegetable Side
-- Swiss Chard (or substitute bok choy or any greens you prefer)
+- [ ] Swiss Chard (or substitute bok choy or any greens you prefer)
 
 ---
 
