@@ -9,9 +9,9 @@ This is a learning projects hub for AI-assisted development work. Projects here 
 **Philosophy:** "Complete before expanding" - finish small tools rather than accumulate half-built systems.
 
 See:
-- `ROADMAP.md` - Overall goals, project status, and philosophy
-- `project-phases.md` - Detailed task lists for each project
-- `ai-concepts-reference.md` - Conceptual explanations and resources
+- `docs/ROADMAP.md` - Overall goals, project status, and philosophy
+- `docs/project-phases.md` - Detailed task lists for each project
+- `docs/ai-concepts-reference.md` - Conceptual explanations and resources
 
 ## Current Projects
 
