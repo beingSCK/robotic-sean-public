@@ -222,7 +222,7 @@ def get_location_name(location):
     return name
 
 
-def calculate_transit_events(events, config):
+def calculate_transit_events(events, config, ignore_trips=False):
     """
     Walk through events and calculate what transit events should be created.
 
@@ -233,9 +233,13 @@ def calculate_transit_events(events, config):
     transit_color = config.get('transit_color_id', '11')
 
     # Detect trip dates upfront
-    trip_dates = detect_trip_dates(events)
-    if trip_dates:
-        print(f"\nDetected trip dates: {sorted(trip_dates)}")
+    if ignore_trips:
+        trip_dates = set()
+        print("\n(Trip detection disabled)")
+    else:
+        trip_dates = detect_trip_dates(events)
+        if trip_dates:
+            print(f"\nDetected trip dates: {sorted(trip_dates)}")
 
     by_day = group_events_by_day(events)
 
@@ -401,6 +405,11 @@ def main():
         default=7,
         help='Number of days forward to process (default: 7)'
     )
+    parser.add_argument(
+        '--ignore-trips',
+        action='store_true',
+        help='Ignore trip detection (for testing)'
+    )
     args = parser.parse_args()
 
     # Load config
@@ -421,7 +430,7 @@ def main():
         return
 
     # Calculate transit events
-    transit_events = calculate_transit_events(events, config)
+    transit_events = calculate_transit_events(events, config, ignore_trips=args.ignore_trips)
 
     print(f"\n{'='*60}")
     print(f"SUMMARY: {len(transit_events)} transit events to create")
