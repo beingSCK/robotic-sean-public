@@ -20,15 +20,20 @@ You don't need to hit all four for every project. But having the ladder in mind 
 
 ---
 
-## Current Project Status
+## Learning Curriculum
 
-| Project | Status | Next Step | Public Output |
-|---------|--------|-----------|---------------|
-| Calendar Transit Tool | Execute mode working (stub times) | Real Routes API integration | GitHub repo, LinkedIn post |
-| Investment DB | Schema created, emails waiting | Parse mbox, build pipeline | Blog post (after RAG working) |
-| Chatbot Rebuild | Reference material ready | Build our own agent loop | Demo + learning writeup |
+This isn't a linear "finish one project, start another" roadmap. It's a curriculum that **interleaves projects** to build skills progressively and avoid burnout.
 
-**Current focus:** Calendar Transit Tool (quick win to ship)
+| Phase | Focus | Key Skills | Status |
+|-------|-------|------------|--------|
+| **LP1** | Calendar Tool MVP | API integration, OAuth, shipping to GitHub | ✅ Complete |
+| **LP2** | Investment DB: Email Pipeline | Data extraction, SQLite, text processing | 🎯 Up Next |
+| **LP3** | Chatbot: Agent Patterns | Agentic loops, tool use, prompt engineering | Planned |
+| **LP4** | Calendar Tool: Chrome Extension | TypeScript or cloud deployment, browser extensions | Planned |
+| **LP5** | Investment DB: RAG Pipeline | Embeddings, vector search, retrieval | Planned |
+| **LP6** | Chatbot: Polish & Ship | Memory, sessions, productionization | Planned |
+
+**Current focus:** LP1 wrap-up (GitHub cleanup, LinkedIn post) → LP2 (Investment DB email pipeline)
 
 ---
 
@@ -39,10 +44,18 @@ You don't need to hit all four for every project. But having the ladder in mind 
 | 0. Private | Works on your machine | Always first |
 | 1. GitHub | Public repo, clean README | After "Definition of Done" |
 | 2. LinkedIn | Short post (200-400 words) | After GitHub, for networking value |
+| **2.5. Ship Product** | **Working product others can use** | **When project warrants it (optional)** |
 | 3. Blog | Longer writeup (1000+ words) | For substantial projects |
 | 4. Talk/Video | Conference talk, YouTube | When you have a compelling story |
 
-**Goal for next 2 months:** Hit Level 2 (GitHub + LinkedIn) for Calendar Tool, Level 3 (Blog) for Investment Tracker.
+> **Level 2.5 (Ship Product)** is optional but recommended when the project naturally becomes something others would use. Examples:
+> - Calendar Transit Tool → Chrome extension on Web Store
+> - Investment DB → Probably not (too personal/niche)
+> - Chatbot Rebuild → Could become a template/starter kit
+>
+> Shipping a real product builds different muscles than shipping code. It requires thinking about UX, onboarding, and real users—valuable even if only 10 people use it.
+
+**Near-term goal:** Hit Level 2 (GitHub + LinkedIn) for Calendar Tool. Consider Level 2.5 (Chrome extension) in LP4.
 
 ---
 

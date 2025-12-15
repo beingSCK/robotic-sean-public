@@ -4,7 +4,7 @@ Detailed implementation plans for each project. See `ROADMAP.md` for the overall
 
 ---
 
-## Phase 1: Finish the Calendar Tool
+## LP1: Finish the Calendar Tool
 
 ### Why This First
 You're one step away from a working tool. The psychological reward of seeing transit events appear in your actual calendar is the fuel for everything else.
@@ -67,6 +67,24 @@ You're one step away from a working tool. The psychological reward of seeing tra
 
 **Note:** Low priority. For now, ensure Stay events have location fields set manually.
 
+### Step 1.8: Traffic-Aware Routing ✓
+
+**Goal:** Use departure time and traffic models for more accurate travel time estimates.
+
+**Tasks:**
+- [x] Pass `departureTime` to Routes API for traffic predictions
+- [x] Query both BEST_GUESS and PESSIMISTIC traffic models for driving routes
+- [x] Blend results (75% pessimistic weight) when difference > 25%
+- [x] Add traffic note to event description when blended
+- [x] Include blending metadata in output
+
+**Conceptual learning:**
+- Traffic-aware routing with the Routes API
+- Handling API parameters for predictive estimates
+- Conservative estimation strategies (blending pessimistic/optimistic)
+
+**Definition of Done:** Transit events use traffic-aware estimates and show when duration was extended due to traffic. ✓ DONE
+
 ### Step 2: Execute Mode ✓
 
 **Tasks:**
@@ -98,7 +116,76 @@ This breaks the seal on "showing work in public" with low stakes—it's a small 
 
 ---
 
-## Phase 2: Investment Email Processing
+## LP4: Calendar Tool → Chrome Extension
+
+*This phase comes after LP3 (Chatbot basics). By then you'll have more TypeScript/JS exposure.*
+
+### Why This Phase
+The Calendar Transit Tool is useful—but only you can use it. Shipping it as a Chrome extension builds the "ship a product" muscle and teaches cloud deployment.
+
+### Architecture Decision (to be made at LP4 start)
+
+| Option | Pros | Cons | Skills Learned |
+|--------|------|------|----------------|
+| **TypeScript rewrite** | Pure client-side, no hosting | More rewrite work | TS, browser APIs |
+| **Python API backend** | Reuses existing code | Needs hosting | **Cloud VMs, Docker, deployment** |
+
+**Leaning:** TypeScript, BUT the Python backend path teaches cloud deployment—a skill worth having. Could do Python backend first (learn deployment), then optionally rewrite to TypeScript later for a serverless version.
+
+### Step 1: Extract Transit Engine Library
+
+**Tasks:**
+- [ ] Refactor `transit_calculator.py` into clean, documented module
+- [ ] Define clear API surface
+- [ ] Make architecture decision (TS vs Python backend)
+
+### Step 2: Backend or Rewrite
+
+**If Python backend:**
+- [ ] Wrap in FastAPI
+- [ ] Dockerize
+- [ ] Deploy to cloud VM (DigitalOcean, Fly.io, Railway, etc.)
+- [ ] Set up domain/HTTPS
+
+**If TypeScript:**
+- [ ] Port core logic to TypeScript
+- [ ] Package as ES module
+
+**Conceptual learning:**
+- Cloud deployment (VMs, Docker, HTTPS)
+- API design for external consumers
+- TypeScript fundamentals (if that path)
+
+### Step 3: Chrome Extension
+
+**Tasks:**
+- [ ] Extension manifest v3 setup
+- [ ] OAuth flow for Google Calendar in extension context
+- [ ] UI: Popup with "Process my calendar" button (simplest MVP)
+- [ ] Connect to backend or use client-side library
+
+**Conceptual learning:**
+- Chrome extension architecture (manifest v3, service workers)
+- OAuth in browser extensions
+- Product thinking: What's the simplest UX that works?
+
+### Step 4: Publish
+
+**Tasks:**
+- [ ] Chrome Web Store developer account ($5)
+- [ ] Store listing, screenshots, privacy policy
+- [ ] Submit for review
+
+**Definition of Done:** Extension live on Chrome Web Store, at least 1 external user.
+
+### Public Output
+- Chrome Web Store listing
+- LinkedIn post: "I shipped my first Chrome extension"
+- (Optional) Blog post on the journey from script → product
+
+---
+
+## LP2: Investment Email Processing (formerly Phase 2)
 
 ### Why This Project
 You have 30GB of real data (Google Takeout emails) and a real use case (tax prep, portfolio tracking). This is where the "AI agent" roadmap becomes practical.
@@ -159,7 +246,7 @@ This project is meatier and deserves a longer writeup:
 
 ---
 
-## Phase 3: Agent Wrapper (Chatbot Rebuild)
+## LP3: Agent Wrapper (Chatbot Rebuild)
 
 ### Why This Phase
 Once RAG is working, wrapping it in an "agent" is relatively straightforward. The reference material in `chatbot-rebuild/` shows the pattern—now we build our own to truly understand it.
@@ -193,3 +280,18 @@ Once RAG is working, wrapping it in an "agent" is relatively straightforward. Th
 - **GitHub:** Investment tracker as open-source tool
 - **Demo video (optional):** 2-minute Loom showing natural language queries
 - **LinkedIn:** Post about building your first AI agent with real use case
+
+---
+
+## Notes on Tooling Evolution
+
+As projects grow in complexity (Chrome extensions, full-stack apps), consider upgrading development tools:
+
+| Tool | Best For | When to Use |
+|------|----------|-------------|
+| **Claude Code CLI** | Scripts, single-file tools, quick iterations | LP1-LP3 (current phase) |
+| **Cursor / AI IDE** | Multi-file projects, TypeScript, debugging | LP4+ (Chrome extension, larger apps) |
+
+**Don't upgrade prematurely**—the current tools work fine for LP1-LP3. But LP4 (Chrome extension with TypeScript) may be the right time to try Cursor or a similar AI-assisted IDE.
+
+The goal isn't to use the fanciest tools. It's to use the simplest tools that get the job done, and upgrade when the complexity genuinely warrants it.
