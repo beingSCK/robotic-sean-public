@@ -18,6 +18,8 @@ See `docs/calendar-robot-plan.md` for the full implementation plan and checklist
 
 ## Setup & Running
 
+**Important:** Use `python3` (not `python`) to run scripts.
+
 Install dependencies:
 ```bash
 pip install google-api-python-client google-auth-httplib2 google-auth-oauthlib requests
@@ -25,7 +27,7 @@ pip install google-api-python-client google-auth-httplib2 google-auth-oauthlib r
 
 Run the exploration script:
 ```bash
-python calendar_explore.py
+python3 calendar_explore.py
 ```
 
 First run opens a browser for OAuth consent. Subsequent runs use the saved `token.json`.

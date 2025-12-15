@@ -6,6 +6,7 @@ Main script that creates transit calendar events before and after meetings.
 Usage:
     python add_transit.py              # Dry-run: outputs to dry_run_output.json
     python add_transit.py --execute    # Actually creates calendar events
+    python add_transit.py --car-only   # Force driving mode (skip public transit)
 
 Currently uses stub transit times. See transit_calculator.py for details.
 """
@@ -359,9 +360,15 @@ def get_home_for_transit(date_str, direction, events, config):
         return config.get('home_address', '1000 Union St, Brooklyn, NY'), "Home"
 
 
-def calculate_transit_events(events, config, ignore_trips=False):
+def calculate_transit_events(events, config, ignore_trips=False, force_drive=False):
     """
     Walk through events and calculate what transit events should be created.
+
+    Args:
+        events: List of calendar events
+        config: Config dict
+        ignore_trips: If True, skip trip date detection
+        force_drive: If True, use car/driving mode for all transit calculations
 
     Returns list of transit event dicts (not yet inserted into calendar).
     """
@@ -427,7 +434,8 @@ def calculate_transit_events(events, config, ignore_trips=False):
                     origin=previous_location,
                     destination=location,
                     use_stub=False,
-                    departure_time=departure_time_str
+                    departure_time=departure_time_str,
+                    force_drive=force_drive
                 )
             except RuntimeError as e:
                 print(f"         (skipping transit: {e})")
@@ -530,7 +538,8 @@ def calculate_transit_events(events, config, ignore_trips=False):
                         origin=previous_location,
                         destination=evening_home,
                         use_stub=False,
-                        departure_time=departure_time_str
+                        departure_time=departure_time_str,
+                        force_drive=force_drive
                     )
                 except RuntimeError as e:
                     print(f"         (skipping transit home: {e})")
@@ -659,12 +668,19 @@ def main():
         action='store_true',
         help='Enable trip detection to skip travel days (default: process all days)'
     )
+    parser.add_argument(
+        '--car-only',
+        action='store_true',
+        help='Force car/driving mode for all transit calculations (skip public transit)'
+    )
     args = parser.parse_args()
 
     # Load config
     config = load_config()
     print(f"Home address: {config.get('home_address')}")
     print(f"Transit color ID: {config.get('transit_color_id')}")
+    if args.car_only:
+        print("Mode: CAR ONLY (skipping public transit)")
 
     # Authenticate and build service
     creds = get_credentials()
@@ -679,7 +695,11 @@ def main():
         return
 
     # Calculate transit events
-    transit_events = calculate_transit_events(events, config, ignore_trips=not args.detect_trips)
+    transit_events = calculate_transit_events(
+        events, config,
+        ignore_trips=not args.detect_trips,
+        force_drive=args.car_only
+    )
 
     print(f"\n{'='*60}")
     print(f"SUMMARY: {len(transit_events)} transit events to create")

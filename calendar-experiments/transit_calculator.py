@@ -141,7 +141,7 @@ def _get_blended_driving_time(origin: str, destination: str, api_key: str,
 
 
 def get_transit_time(origin: str, destination: str, use_stub: bool = True,
-                     departure_time: str = None) -> dict:
+                     departure_time: str = None, force_drive: bool = False) -> dict:
     """
     Get travel time between two addresses.
 
@@ -153,6 +153,7 @@ def get_transit_time(origin: str, destination: str, use_stub: bool = True,
         departure_time: RFC 3339 timestamp for traffic-aware routing (optional).
                        When provided for driving routes, queries both BEST_GUESS
                        and PESSIMISTIC traffic models and blends if difference > 25%.
+        force_drive: If True, skip transit and only use driving mode.
 
     Returns:
         dict with keys:
@@ -167,7 +168,7 @@ def get_transit_time(origin: str, destination: str, use_stub: bool = True,
         # Stub mode: return hardcoded 30 minutes (for testing without API calls)
         return {
             "duration_minutes": 30,
-            "mode": "transit",
+            "mode": "driving" if force_drive else "transit",
             "is_stub": True,
             "origin": origin,
             "destination": destination
@@ -183,8 +184,12 @@ def get_transit_time(origin: str, destination: str, use_stub: bool = True,
             "Or use use_stub=True for testing."
         )
 
-    # Try TRANSIT first
-    result = _call_routes_api(origin, destination, "TRANSIT", api_key)
+    # If force_drive, skip transit entirely
+    if force_drive:
+        result = None  # Skip to driving logic below
+    else:
+        # Try TRANSIT first
+        result = _call_routes_api(origin, destination, "TRANSIT", api_key)
 
     if result:
         duration_minutes = result["duration_seconds"] // 60
