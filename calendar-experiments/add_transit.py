@@ -447,7 +447,7 @@ def calculate_transit_events(events, config, ignore_trips=False):
                 'colorId': transit_color,
                 'start': format_datetime(transit_start),
                 'end': format_datetime(event_start),
-                'description': f"Travel from {previous_location} to {location}",
+                'description': f"Arriving at: {location}. Travel by {'car' if transit_time['mode'] == 'driving' else 'transit'}.",
                 '_metadata': {
                     'duration_minutes': transit_time['duration_minutes'],
                     'mode': transit_time['mode'],
@@ -457,7 +457,7 @@ def calculate_transit_events(events, config, ignore_trips=False):
             }
 
             transit_events.append(transit_event)
-            print(f"         + TRANSIT: {transit_time['duration_minutes']} min from {previous_location_name}")
+            print(f"         + TRANSIT from {previous_location_name} to {destination_name}: {transit_time['duration_minutes']} min by {'car' if transit_time['mode'] == 'driving' else 'transit'}")
 
             # Update previous location for next iteration
             previous_location = location
@@ -508,7 +508,7 @@ def calculate_transit_events(events, config, ignore_trips=False):
                     'colorId': transit_color,
                     'start': format_datetime(event_end),
                     'end': format_datetime(transit_end),
-                    'description': f"Travel from {previous_location} to {evening_home}",
+                    'description': f"Arriving at: {evening_home}. Travel by {'car' if transit_time['mode'] == 'driving' else 'transit'}.",
                     '_metadata': {
                         'duration_minutes': transit_time['duration_minutes'],
                         'mode': transit_time['mode'],
@@ -518,7 +518,7 @@ def calculate_transit_events(events, config, ignore_trips=False):
                 }
 
                 transit_events.append(transit_event)
-                print(f"         + TRANSIT HOME: {transit_time['duration_minutes']} min")
+                print(f"         + TRANSIT from {previous_location_name} to {evening_home_name}: {transit_time['duration_minutes']} min by {'car' if transit_time['mode'] == 'driving' else 'transit'}")
 
     return transit_events
 
