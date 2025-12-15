@@ -222,6 +222,41 @@ def get_location_name(location):
     return name
 
 
+def overlaps_existing_transit(start, end, events, transit_color):
+    """
+    Check if a proposed transit event would overlap with any existing transit event.
+
+    Args:
+        start: datetime of proposed transit start
+        end: datetime of proposed transit end
+        events: list of all calendar events
+        transit_color: colorId for transit events (e.g., '11')
+
+    Returns:
+        True if there's an overlap, False otherwise
+    """
+    for event in events:
+        # Only check existing transit events
+        if event.get('colorId') != transit_color:
+            continue
+
+        # Get event times
+        event_start_str = event['start'].get('dateTime')
+        event_end_str = event['end'].get('dateTime')
+
+        if not event_start_str or not event_end_str:
+            continue
+
+        event_start = parse_datetime(event_start_str)
+        event_end = parse_datetime(event_end_str)
+
+        # Check for overlap: events overlap if one starts before the other ends
+        if start < event_end and end > event_start:
+            return True
+
+    return False
+
+
 def calculate_transit_events(events, config, ignore_trips=False):
     """
     Walk through events and calculate what transit events should be created.
@@ -278,8 +313,22 @@ def calculate_transit_events(events, config, ignore_trips=False):
                 use_stub=False
             )
 
+            # Skip short transits (< 10 minutes)
+            if transit_time['duration_minutes'] < 10:
+                print(f"         (skipping transit: only {transit_time['duration_minutes']} min)")
+                previous_location = location
+                previous_location_name = get_location_name(location)
+                continue
+
             event_start = parse_datetime(event['start']['dateTime'])
             transit_start = event_start - datetime.timedelta(minutes=transit_time['duration_minutes'])
+
+            # Skip if overlaps existing transit event
+            if overlaps_existing_transit(transit_start, event_start, events, transit_color):
+                print(f"         (skipping: overlaps existing transit)")
+                previous_location = location
+                previous_location_name = get_location_name(location)
+                continue
 
             destination_name = get_location_name(location)
             transit_summary = f"TRANSIT: {previous_location_name} → {destination_name}"
@@ -323,8 +372,18 @@ def calculate_transit_events(events, config, ignore_trips=False):
                     use_stub=False
                 )
 
+                # Skip short transits (< 10 minutes)
+                if transit_time['duration_minutes'] < 10:
+                    print(f"         (skipping transit home: only {transit_time['duration_minutes']} min)")
+                    continue
+
                 event_end = parse_datetime(last_event['end']['dateTime'])
                 transit_end = event_end + datetime.timedelta(minutes=transit_time['duration_minutes'])
+
+                # Skip if overlaps existing transit event
+                if overlaps_existing_transit(event_end, transit_end, events, transit_color):
+                    print(f"         (skipping transit home: overlaps existing transit)")
+                    continue
 
                 transit_event = {
                     'summary': f"TRANSIT: {previous_location_name} → Home",
@@ -406,9 +465,9 @@ def main():
         help='Number of days forward to process (default: 7)'
     )
     parser.add_argument(
-        '--ignore-trips',
+        '--detect-trips',
         action='store_true',
-        help='Ignore trip detection (for testing)'
+        help='Enable trip detection to skip travel days (default: process all days)'
     )
     args = parser.parse_args()
 
@@ -430,7 +489,7 @@ def main():
         return
 
     # Calculate transit events
-    transit_events = calculate_transit_events(events, config, ignore_trips=args.ignore_trips)
+    transit_events = calculate_transit_events(events, config, ignore_trips=not args.detect_trips)
 
     print(f"\n{'='*60}")
     print(f"SUMMARY: {len(transit_events)} transit events to create")

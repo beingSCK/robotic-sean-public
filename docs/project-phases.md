@@ -9,20 +9,30 @@ Detailed implementation plans for each project. See `ROADMAP.md` for the overall
 ### Why This First
 You're one step away from a working tool. The psychological reward of seeing transit events appear in your actual calendar is the fuel for everything else.
 
-### Step 1: Real API Integration
+### Step 1: Real API Integration ✓
 
 **Tasks:**
-- Add Routes API key to `config.json`
-- Implement real HTTP call in `transit_calculator.py` (replace stub)
-- Test with real travel times
-- Handle edge cases (API errors, missing routes)
+- [x] Add Routes API key to `config.json`
+- [x] Implement real HTTP call in `transit_calculator.py` (replace stub)
+- [x] Test with real travel times
+- [x] Handle edge cases (API errors, missing routes)
+- [x] Add `--test` CLI for standalone testing
+- [x] Add `'stay:'` to trip detection keywords
 
 **Conceptual learning:**
 - REST API integration patterns
 - Error handling and graceful degradation
 - The difference between "it works in stub mode" and "it works for real"
 
-**Definition of Done:** `python add_transit.py` shows accurate travel times from Google Routes API.
+**Definition of Done:** `python add_transit.py` shows accurate travel times from Google Routes API. ✓ DONE
+
+### Step 1.5: Transit Event Logic Refinements
+
+**Tasks:**
+- [ ] Skip creating transit events if duration < 10 minutes
+- [ ] Skip creating transit events if they would overlap with existing transit events
+
+**Definition of Done:** Running `--execute` doesn't create redundant or trivially short transit events.
 
 ### Step 2: Execute Mode ✓
 
