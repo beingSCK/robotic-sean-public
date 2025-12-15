@@ -173,7 +173,7 @@ def detect_trip_dates(events, home_airports=None):
                 trip_dates.add(flight_date)
 
         # Method 2: Detect stay events (hotel, airbnb)
-        stay_keywords = ['stay at', 'hotel', 'airbnb', 'vrbo', 'accommodation']
+        stay_keywords = ['stay:', 'stay at', 'hotel', 'airbnb', 'vrbo', 'accommodation']
         is_stay = any(kw in summary for kw in stay_keywords)
 
         if is_stay:
@@ -271,7 +271,7 @@ def calculate_transit_events(events, config):
             transit_time = get_transit_time(
                 origin=previous_location,
                 destination=location,
-                use_stub=True  # TODO(routes-api): Change to False when API ready
+                use_stub=False
             )
 
             event_start = parse_datetime(event['start']['dateTime'])
@@ -316,7 +316,7 @@ def calculate_transit_events(events, config):
                 transit_time = get_transit_time(
                     origin=previous_location,
                     destination=home_address,
-                    use_stub=True  # TODO(routes-api): Change to False when API ready
+                    use_stub=False
                 )
 
                 event_end = parse_datetime(last_event['end']['dateTime'])
