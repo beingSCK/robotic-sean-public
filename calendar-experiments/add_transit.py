@@ -224,6 +224,16 @@ def get_location_name(location):
     return name
 
 
+def format_departure_time_for_api(dt):
+    """Format datetime as RFC 3339 UTC for Routes API."""
+    # Convert to UTC if timezone-aware, otherwise assume already appropriate
+    if dt.tzinfo:
+        utc_dt = dt.astimezone(datetime.timezone.utc)
+    else:
+        utc_dt = dt
+    return utc_dt.strftime('%Y-%m-%dT%H:%M:%SZ')
+
+
 def overlaps_existing_transit(start, end, events, transit_color):
     """
     Check if a proposed transit event would overlap with any existing transit event.
@@ -383,6 +393,7 @@ def calculate_transit_events(events, config, ignore_trips=False):
 
         previous_location = morning_home
         previous_location_name = morning_home_name
+        previous_event_end = None  # Track when the last event ended (for traffic-aware routing)
 
         for i, event in enumerate(day_events):
             summary = event.get('summary', '(no title)')
@@ -401,12 +412,22 @@ def calculate_transit_events(events, config, ignore_trips=False):
             print(f"  EVENT: {summary}")
             print(f"         Location: {location}")
 
+            # Calculate departure time for traffic-aware routing
+            event_start = parse_datetime(event['start']['dateTime'])
+            if previous_event_end:
+                departure_time_str = format_departure_time_for_api(previous_event_end)
+            else:
+                # First event of day: estimate departure as event_start - 60 min
+                estimated_departure = event_start - datetime.timedelta(minutes=60)
+                departure_time_str = format_departure_time_for_api(estimated_departure)
+
             # Calculate transit TO this event
             try:
                 transit_time = get_transit_time(
                     origin=previous_location,
                     destination=location,
-                    use_stub=False
+                    use_stub=False,
+                    departure_time=departure_time_str
                 )
             except RuntimeError as e:
                 print(f"         (skipping transit: {e})")
@@ -419,6 +440,7 @@ def calculate_transit_events(events, config, ignore_trips=False):
                 print(f"         (skipping transit: only {transit_time['duration_minutes']} min)")
                 previous_location = location
                 previous_location_name = get_location_name(location)
+                previous_event_end = parse_datetime(event['end']['dateTime'])
                 continue
 
             # Skip unreasonably long transits (> 3 hours)
@@ -426,9 +448,10 @@ def calculate_transit_events(events, config, ignore_trips=False):
                 print(f"         (skipping transit: {transit_time['duration_minutes']} min is unreasonably long)")
                 previous_location = location
                 previous_location_name = get_location_name(location)
+                previous_event_end = parse_datetime(event['end']['dateTime'])
                 continue
 
-            event_start = parse_datetime(event['start']['dateTime'])
+            # event_start was already parsed above for departure_time calculation
             transit_start = event_start - datetime.timedelta(minutes=transit_time['duration_minutes'])
 
             # Skip if overlaps existing transit event
@@ -436,10 +459,31 @@ def calculate_transit_events(events, config, ignore_trips=False):
                 print(f"         (skipping: overlaps existing transit)")
                 previous_location = location
                 previous_location_name = get_location_name(location)
+                previous_event_end = parse_datetime(event['end']['dateTime'])
                 continue
 
             destination_name = get_location_name(location)
             transit_summary = f"TRANSIT: {previous_location_name} → {destination_name}"
+
+            # Build metadata with optional blending info
+            metadata = {
+                'duration_minutes': transit_time['duration_minutes'],
+                'mode': transit_time['mode'],
+                'is_stub': transit_time['is_stub'],
+                'for_event': summary
+            }
+            if transit_time.get('best_guess_minutes') is not None:
+                metadata['best_guess_minutes'] = transit_time['best_guess_minutes']
+            if transit_time.get('pessimistic_minutes') is not None:
+                metadata['pessimistic_minutes'] = transit_time['pessimistic_minutes']
+            if transit_time.get('is_blended'):
+                metadata['is_blended'] = True
+
+            # Build description with optional traffic note
+            mode_label = 'car' if transit_time['mode'] == 'driving' else 'transit'
+            description = f"Arriving at: {location}. Travel by {mode_label}."
+            if transit_time.get('is_blended'):
+                description += " (Transit duration is longer than usual at this time due to traffic.)"
 
             transit_event = {
                 'summary': transit_summary,
@@ -447,21 +491,24 @@ def calculate_transit_events(events, config, ignore_trips=False):
                 'colorId': transit_color,
                 'start': format_datetime(transit_start),
                 'end': format_datetime(event_start),
-                'description': f"Arriving at: {location}. Travel by {'car' if transit_time['mode'] == 'driving' else 'transit'}.",
-                '_metadata': {
-                    'duration_minutes': transit_time['duration_minutes'],
-                    'mode': transit_time['mode'],
-                    'is_stub': transit_time['is_stub'],
-                    'for_event': summary
-                }
+                'description': description,
+                '_metadata': metadata
             }
 
             transit_events.append(transit_event)
-            print(f"         + TRANSIT from {previous_location_name} to {destination_name}: {transit_time['duration_minutes']} min by {'car' if transit_time['mode'] == 'driving' else 'transit'}")
 
-            # Update previous location for next iteration
+            # Console output with blending info
+            mode_str = 'car' if transit_time['mode'] == 'driving' else 'transit'
+            if transit_time.get('is_blended'):
+                blend_info = f" (blended: {transit_time['best_guess_minutes']} best / {transit_time['pessimistic_minutes']} pessimistic)"
+            else:
+                blend_info = ""
+            print(f"         + TRANSIT from {previous_location_name} to {destination_name}: {transit_time['duration_minutes']} min by {mode_str}{blend_info}")
+
+            # Update previous location and event end for next iteration
             previous_location = location
             previous_location_name = destination_name
+            previous_event_end = parse_datetime(event['end']['dateTime'])
 
         # After last event of day, add transit home (to evening's "home" - may be a Stay location)
         if previous_location.lower() != evening_home.lower() and day_events:
@@ -474,11 +521,16 @@ def calculate_transit_events(events, config, ignore_trips=False):
                     break
 
             if last_event and last_event.get('location'):
+                # Calculate departure time for traffic-aware routing (leaving when last event ends)
+                event_end = parse_datetime(last_event['end']['dateTime'])
+                departure_time_str = format_departure_time_for_api(event_end)
+
                 try:
                     transit_time = get_transit_time(
                         origin=previous_location,
                         destination=evening_home,
-                        use_stub=False
+                        use_stub=False,
+                        departure_time=departure_time_str
                     )
                 except RuntimeError as e:
                     print(f"         (skipping transit home: {e})")
@@ -494,7 +546,6 @@ def calculate_transit_events(events, config, ignore_trips=False):
                     print(f"         (skipping transit home: {transit_time['duration_minutes']} min is unreasonably long)")
                     continue
 
-                event_end = parse_datetime(last_event['end']['dateTime'])
                 transit_end = event_end + datetime.timedelta(minutes=transit_time['duration_minutes'])
 
                 # Skip if overlaps existing transit event
@@ -502,23 +553,45 @@ def calculate_transit_events(events, config, ignore_trips=False):
                     print(f"         (skipping transit home: overlaps existing transit)")
                     continue
 
+                # Build metadata with optional blending info
+                metadata = {
+                    'duration_minutes': transit_time['duration_minutes'],
+                    'mode': transit_time['mode'],
+                    'is_stub': transit_time['is_stub'],
+                    'for_event': 'return home'
+                }
+                if transit_time.get('best_guess_minutes') is not None:
+                    metadata['best_guess_minutes'] = transit_time['best_guess_minutes']
+                if transit_time.get('pessimistic_minutes') is not None:
+                    metadata['pessimistic_minutes'] = transit_time['pessimistic_minutes']
+                if transit_time.get('is_blended'):
+                    metadata['is_blended'] = True
+
+                # Build description with optional traffic note
+                mode_label = 'car' if transit_time['mode'] == 'driving' else 'transit'
+                description = f"Arriving at: {evening_home}. Travel by {mode_label}."
+                if transit_time.get('is_blended'):
+                    description += " (Transit duration is longer than usual at this time due to traffic.)"
+
                 transit_event = {
                     'summary': f"TRANSIT: {previous_location_name} → {evening_home_name}",
                     'location': previous_location,
                     'colorId': transit_color,
                     'start': format_datetime(event_end),
                     'end': format_datetime(transit_end),
-                    'description': f"Arriving at: {evening_home}. Travel by {'car' if transit_time['mode'] == 'driving' else 'transit'}.",
-                    '_metadata': {
-                        'duration_minutes': transit_time['duration_minutes'],
-                        'mode': transit_time['mode'],
-                        'is_stub': transit_time['is_stub'],
-                        'for_event': 'return home'
-                    }
+                    'description': description,
+                    '_metadata': metadata
                 }
 
                 transit_events.append(transit_event)
-                print(f"         + TRANSIT from {previous_location_name} to {evening_home_name}: {transit_time['duration_minutes']} min by {'car' if transit_time['mode'] == 'driving' else 'transit'}")
+
+                # Console output with blending info
+                mode_str = 'car' if transit_time['mode'] == 'driving' else 'transit'
+                if transit_time.get('is_blended'):
+                    blend_info = f" (blended: {transit_time['best_guess_minutes']} best / {transit_time['pessimistic_minutes']} pessimistic)"
+                else:
+                    blend_info = ""
+                print(f"         + TRANSIT from {previous_location_name} to {evening_home_name}: {transit_time['duration_minutes']} min by {mode_str}{blend_info}")
 
     return transit_events
 
