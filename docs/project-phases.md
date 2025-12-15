@@ -26,13 +26,46 @@ You're one step away from a working tool. The psychological reward of seeing tra
 
 **Definition of Done:** `python add_transit.py` shows accurate travel times from Google Routes API. ✓ DONE
 
-### Step 1.5: Transit Event Logic Refinements
+### Step 1.5: Transit Event Logic Refinements ✓
 
 **Tasks:**
-- [ ] Skip creating transit events if duration < 10 minutes
-- [ ] Skip creating transit events if they would overlap with existing transit events
+- [x] Skip creating transit events if duration < 10 minutes
+- [x] Skip creating transit events if they would overlap with existing transit events
+- [x] Flip trip detection default (process all days; add `--detect-trips` to enable skipping)
 
-**Definition of Done:** Running `--execute` doesn't create redundant or trivially short transit events.
+**Definition of Done:** Running `--execute` doesn't create redundant or trivially short transit events. ✓ DONE
+
+### Step 1.6: Dynamic "Home" Based on Stay Events ✓
+
+**Goal:** On travel days, use the location from "Stay" events as the home location instead of the fixed config address. This makes transit work correctly when traveling.
+
+**Tasks:**
+- [x] Extend existing stay detection (reuse `STAY_KEYWORDS`) to also extract the location
+- [x] On-demand lookup: `get_stay_location_for_night()` finds Stay event covering a given night
+- [x] `get_home_for_transit()` returns prior night's stay (morning) or tonight's stay (evening)
+- [x] For transit TO first event: use prior night's Stay location as origin
+- [x] For transit HOME after last event: use that night's Stay location as destination
+- [x] If no Stay event exists for a date, fall back to config home address
+- [x] Add error handling (try/except around Routes API calls)
+- [x] Add sanity check: skip transits > 3 hours
+
+**Conceptual learning:**
+- State management across days (tracking where you "are" vs where you're "going")
+- Graceful fallback patterns
+- Error handling for external API failures
+
+**Definition of Done:** Running on a travel week correctly uses hotel/stay locations as the "home" for each day's transit calculations. ✓ DONE
+
+### Step 1.7: AI-Assisted Location for Stay Events (Future)
+
+**Goal:** Use an AI service to guess the location for Stay events that don't have a location field set.
+
+**Tasks:**
+- [ ] Detect Stay events with no location field
+- [ ] Use event summary/description to infer location (e.g., "STAY: with Yinne" → look up Yinne's address)
+- [ ] Optionally prompt user to confirm/correct inferred location
+
+**Note:** Low priority. For now, ensure Stay events have location fields set manually.
 
 ### Step 2: Execute Mode ✓
 

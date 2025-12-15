@@ -31,6 +31,9 @@ SCOPES = ['https://www.googleapis.com/auth/calendar']
 CREDENTIALS_FILE = 'credentials.json'
 TOKEN_FILE = 'token.json'
 
+# Stay keywords used for detecting overnight stays
+STAY_KEYWORDS = ['stay:', 'stay at', 'hotel', 'airbnb', 'vrbo', 'accommodation']
+
 
 def get_credentials():
     """Handle OAuth flow with token caching."""
@@ -173,8 +176,7 @@ def detect_trip_dates(events, home_airports=None):
                 trip_dates.add(flight_date)
 
         # Method 2: Detect stay events (hotel, airbnb)
-        stay_keywords = ['stay:', 'stay at', 'hotel', 'airbnb', 'vrbo', 'accommodation']
-        is_stay = any(kw in summary for kw in stay_keywords)
+        is_stay = any(kw in summary for kw in STAY_KEYWORDS)
 
         if is_stay:
             # Stay events are typically all-day events with 'date' field
@@ -257,6 +259,96 @@ def overlaps_existing_transit(start, end, events, transit_color):
     return False
 
 
+def get_stay_location_for_night(date_str, events):
+    """
+    Find the Stay event location for a given night.
+
+    Args:
+        date_str: The date of the night (YYYY-MM-DD) - "where am I sleeping tonight?"
+
+    Returns:
+        The location string if a Stay event covers this night, else None.
+
+    Note on single-day vs multi-day stays:
+        - Single-day stay (Dec 15): covers the night of Dec 15
+        - Multi-day stay (Dec 12-15): covers nights of Dec 12, 13, 14 only
+          (the last day is checkout day - you leave in the morning, don't sleep there)
+    """
+    target_date = datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
+
+    for event in events:
+        summary = event.get('summary', '').lower()
+
+        # Check if this is a Stay event
+        if not any(kw in summary for kw in STAY_KEYWORDS):
+            continue
+
+        # Stay events are all-day events with 'date' fields
+        start_date_str = event['start'].get('date')
+        end_date_str = event['end'].get('date')
+
+        if not start_date_str or not end_date_str:
+            continue  # Not an all-day event
+
+        start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%d').date()
+        end_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%d').date()
+
+        # Calculate duration to distinguish single-day from multi-day stays
+        # For all-day events: end_date is exclusive, so a 1-day event has end = start + 1
+        duration_days = (end_date - start_date).days
+
+        if duration_days == 1:
+            # Single-day stay: covers the night of that day
+            if target_date == start_date:
+                location = event.get('location')
+                if location:
+                    return location
+                else:
+                    return None
+        else:
+            # Multi-day stay: covers nights of start through (end - 2 days)
+            # The last day is checkout day, no night there
+            last_night = end_date - datetime.timedelta(days=2)
+            if start_date <= target_date <= last_night:
+                location = event.get('location')
+                if location:
+                    return location
+                else:
+                    return None
+
+    return None
+
+
+def get_home_for_transit(date_str, direction, events, config):
+    """
+    Get the "home" location for transit on a given date.
+
+    Args:
+        date_str: The date (YYYY-MM-DD)
+        direction: "morning" (leaving from where I slept) or "evening" (returning to where I'll sleep)
+        events: List of calendar events
+        config: Config dict with home_address
+
+    Returns:
+        (location, display_name) tuple
+    """
+    target_date = datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
+
+    if direction == "morning":
+        # Look up prior night's stay (where did I sleep last night?)
+        prior_night = (target_date - datetime.timedelta(days=1)).strftime('%Y-%m-%d')
+        stay_location = get_stay_location_for_night(prior_night, events)
+    else:  # evening
+        # Look up tonight's stay (where am I sleeping tonight?)
+        stay_location = get_stay_location_for_night(date_str, events)
+
+    if stay_location:
+        return stay_location, get_location_name(stay_location)
+    else:
+        # Fall back to config home address
+        return config.get('home_address', '1000 Union St, Brooklyn, NY'), "Home"
+
+
 def calculate_transit_events(events, config, ignore_trips=False):
     """
     Walk through events and calculate what transit events should be created.
@@ -264,7 +356,6 @@ def calculate_transit_events(events, config, ignore_trips=False):
     Returns list of transit event dicts (not yet inserted into calendar).
     """
     transit_events = []
-    home_address = config.get('home_address', '1000 Union St, Brooklyn, NY')
     transit_color = config.get('transit_color_id', '11')
 
     # Detect trip dates upfront
@@ -286,8 +377,12 @@ def calculate_transit_events(events, config, ignore_trips=False):
             print(f"  (Trip day - skipping transit events)")
             continue
 
-        previous_location = home_address
-        previous_location_name = "Home"
+        # Get dynamic "home" for this day based on Stay events
+        morning_home, morning_home_name = get_home_for_transit(date_str, "morning", events, config)
+        evening_home, evening_home_name = get_home_for_transit(date_str, "evening", events, config)
+
+        previous_location = morning_home
+        previous_location_name = morning_home_name
 
         for i, event in enumerate(day_events):
             summary = event.get('summary', '(no title)')
@@ -307,15 +402,28 @@ def calculate_transit_events(events, config, ignore_trips=False):
             print(f"         Location: {location}")
 
             # Calculate transit TO this event
-            transit_time = get_transit_time(
-                origin=previous_location,
-                destination=location,
-                use_stub=False
-            )
+            try:
+                transit_time = get_transit_time(
+                    origin=previous_location,
+                    destination=location,
+                    use_stub=False
+                )
+            except RuntimeError as e:
+                print(f"         (skipping transit: {e})")
+                previous_location = location
+                previous_location_name = get_location_name(location)
+                continue
 
             # Skip short transits (< 10 minutes)
             if transit_time['duration_minutes'] < 10:
                 print(f"         (skipping transit: only {transit_time['duration_minutes']} min)")
+                previous_location = location
+                previous_location_name = get_location_name(location)
+                continue
+
+            # Skip unreasonably long transits (> 3 hours)
+            if transit_time['duration_minutes'] > 180:
+                print(f"         (skipping transit: {transit_time['duration_minutes']} min is unreasonably long)")
                 previous_location = location
                 previous_location_name = get_location_name(location)
                 continue
@@ -355,8 +463,8 @@ def calculate_transit_events(events, config, ignore_trips=False):
             previous_location = location
             previous_location_name = destination_name
 
-        # After last event of day, add transit home
-        if previous_location != home_address and day_events:
+        # After last event of day, add transit home (to evening's "home" - may be a Stay location)
+        if previous_location.lower() != evening_home.lower() and day_events:
             # Find the last non-skipped event
             last_event = None
             for event in reversed(day_events):
@@ -366,15 +474,24 @@ def calculate_transit_events(events, config, ignore_trips=False):
                     break
 
             if last_event and last_event.get('location'):
-                transit_time = get_transit_time(
-                    origin=previous_location,
-                    destination=home_address,
-                    use_stub=False
-                )
+                try:
+                    transit_time = get_transit_time(
+                        origin=previous_location,
+                        destination=evening_home,
+                        use_stub=False
+                    )
+                except RuntimeError as e:
+                    print(f"         (skipping transit home: {e})")
+                    continue
 
                 # Skip short transits (< 10 minutes)
                 if transit_time['duration_minutes'] < 10:
                     print(f"         (skipping transit home: only {transit_time['duration_minutes']} min)")
+                    continue
+
+                # Skip unreasonably long transits (> 3 hours)
+                if transit_time['duration_minutes'] > 180:
+                    print(f"         (skipping transit home: {transit_time['duration_minutes']} min is unreasonably long)")
                     continue
 
                 event_end = parse_datetime(last_event['end']['dateTime'])
@@ -386,12 +503,12 @@ def calculate_transit_events(events, config, ignore_trips=False):
                     continue
 
                 transit_event = {
-                    'summary': f"TRANSIT: {previous_location_name} → Home",
+                    'summary': f"TRANSIT: {previous_location_name} → {evening_home_name}",
                     'location': previous_location,
                     'colorId': transit_color,
                     'start': format_datetime(event_end),
                     'end': format_datetime(transit_end),
-                    'description': f"Travel from {previous_location} to {home_address}",
+                    'description': f"Travel from {previous_location} to {evening_home}",
                     '_metadata': {
                         'duration_minutes': transit_time['duration_minutes'],
                         'mode': transit_time['mode'],
