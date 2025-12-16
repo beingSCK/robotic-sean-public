@@ -6,7 +6,7 @@ Mental models and resources for building AI agents. Refer back to this while wor
 
 ## What "Function Calling" Actually Is
 
-The LLM outputs JSON saying "call this function with these args." You execute it, return results, and the LLM continues. (See `n8n-agent-samples/social-manager-agent-unpacked.ts`, lines 248-293.)
+The LLM outputs JSON saying "call this function with these args." You execute it, return results, and the LLM continues. (See `chatbot-rebuild/social-manager-agent-unpacked.ts`, lines 248-293.)
 
 ---
 
@@ -73,5 +73,5 @@ For your current projects, writing it yourself teaches more.
 - Pinecone (managed): https://www.pinecone.io/
 
 ### Reference Code
-- `n8n-agent-samples/social-manager-agent-unpacked.ts` — What n8n agents look like as traditional code
-- `calendar-experiments/add_transit.py` — Your working pipeline code (in separate repo)
+- `chatbot-rebuild/social-manager-agent-unpacked.ts` — What n8n agents look like as traditional code
+- `calendar-experiments/add_transit.py` — Working calendar automation pipeline

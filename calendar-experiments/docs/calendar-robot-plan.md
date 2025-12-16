@@ -9,21 +9,26 @@ A Python script that automatically creates "transit" calendar events before and 
 
 ---
 
-## Status (Updated 2025-12-04)
+## Status (Updated 2025-12-16)
 
-**Phase 1 COMPLETE:** Stub mode working. Dry-run outputs to `dry_run_output.json`.
+**ALL PHASES COMPLETE.** Core functionality working end-to-end.
 
-- [x] `transit_calculator.py` created (stub mode, returns 30 min)
-- [x] `add_transit.py` created (dry-run mode)
-- [ ] Routes API integration (Phase 2)
-- [ ] Execute mode / calendar write (Phase 3)
+- [x] Phase 1: Stub mode + dry-run
+- [x] Phase 2: Routes API integration (real travel times)
+- [x] Phase 3: Execute mode (creates events in Google Calendar)
+- [x] Phase 4: Enhancements (traffic-aware, car-only flag, dynamic home)
 
-**Key decisions made:**
-- Transit colorId = "11" (tomato) — was "8" (grey) before color semantic update
-- Hold events (tentative/conditional) use colorId "8" (graphite) and are skipped
+**Key decisions:**
+- Transit colorId = "11" (tomato)
+- Hold events (colorId "8", graphite) are skipped
 - Travel/trip events use colorId "3" (grape)
-- Using Routes API (not Directions API, which went Legacy March 2025)
+- Using Routes API (not legacy Directions API)
 - Config stored in `config.json` (gitignored)
+
+**Enhancements added:**
+- Traffic-aware routing: blends BEST_GUESS + PESSIMISTIC estimates
+- `--car-only` flag: forces driving mode (skips transit)
+- Dynamic home: uses "Stay" events to detect temporary home on travel days
 
 ---
 
@@ -49,8 +54,8 @@ calendar-experiments/
 ├── config.json           # API key & settings (DO NOT COMMIT)
 ├── .gitignore            # Excludes credentials
 ├── calendar_explore.py   # Exploration script (read-only)
-├── transit_calculator.py # Routes API wrapper (DONE - stub mode)
-├── add_transit.py        # Main script / orchestrator (DONE - dry-run)
+├── transit_calculator.py # Routes API wrapper (COMPLETE)
+├── add_transit.py        # Main script / orchestrator (COMPLETE)
 ├── events_dump.json      # Debug output (gitignored)
 └── dry_run_output.json   # Transit events preview (gitignored)
 ```
@@ -58,8 +63,8 @@ calendar-experiments/
 ### transit_calculator.py
 - Single responsibility: given two addresses, return travel time and mode
 - Uses Google Maps Routes API (successor to Directions API)
-- Currently returns stub data (30 min) — see `# TODO(routes-api)` comments
-- Returns: `{ "duration_minutes": 35, "mode": "transit", "is_stub": true }`
+- Returns real travel times with traffic-aware estimates
+- Returns: `{ "duration_minutes": 35, "mode": "transit" }`
 
 ### add_transit.py
 - Fetches calendar events
@@ -102,15 +107,15 @@ calendar-experiments/
 - [x] Store key in `config.json` (gitignored)
 
 ### 2. Update Calendar OAuth Scope
-- [ ] In your code, change scope from `calendar.readonly` to `calendar`
-- [ ] Delete `token.json` to force re-authentication
-- [ ] Re-run to get new token with write permission
+- [x] In your code, change scope from `calendar.readonly` to `calendar`
+- [x] Delete `token.json` to force re-authentication
+- [x] Re-run to get new token with write permission
 
 ### 3. Build transit_calculator.py
 - [x] Create function: `get_transit_time(origin, destination) -> dict`
 - [x] Stub mode working (returns 30 min)
-- [ ] Implement real Routes API call (see `# TODO(routes-api)` in code)
-- [ ] Implement transit vs driving fallback logic
+- [x] Implement real Routes API call
+- [x] Implement transit vs driving fallback logic
 
 ### 4. Build add_transit.py
 - [x] Fetch events for next 7 days (configurable via `--days`)
@@ -121,35 +126,18 @@ calendar-experiments/
 - [x] Build transit event objects with correct colorId ("11" = tomato)
 - [x] Dry-run mode: outputs to `dry_run_output.json`
 - [x] Trip detection: skips entire days when traveling
-- [ ] Execute mode: insert events via `service.events().insert()`
+- [x] Execute mode: insert events via `service.events().insert()`
 
 ### 5. Test
 - [x] Run dry-run on upcoming events
 - [x] Verify `dry_run_output.json` looks correct
-- [ ] Verify transit events appear in Google Calendar (after execute mode)
-- [ ] Verify colors are correct
-- [ ] Verify times make sense with real API data
+- [x] Verify transit events appear in Google Calendar
+- [x] Verify colors are correct
+- [x] Verify times make sense with real API data
 
-### 6. Git Workflow (Phase-Based)
+### 6. Git Workflow — COMPLETE
 
-**Branch:** `add-transit-events` (created from `main`)
-
-**Phase 1 Commit (stub mode):**
-- [x] `git add .`
-- [x] `git commit -m "Phase 1: stub mode and dry-run working"`
-
-**Phase 2 Commit (real API):**
-- [ ] `git add .`
-- [ ] `git commit -m "Phase 2: real Routes API integration"`
-
-**Phase 3 Commit (execute mode):**
-- [ ] `git add .`
-- [ ] `git commit -m "Phase 3: execute mode creates calendar events"`
-
-**Merge to main:**
-- [ ] `git checkout main`
-- [ ] `git merge add-transit-events`
-- [ ] `git push`
+All phases merged to main. Feature branch work complete.
 
 ---
 
@@ -221,13 +209,8 @@ python3 calendar_explore.py
 # Run the transit script (dry-run by default)
 python3 add_transit.py              # Outputs to dry_run_output.json
 python3 add_transit.py --days 14    # Look 14 days ahead
-python3 add_transit.py --execute    # Actually create events (Phase 3)
-
-# Git workflow
-git status                  # Where am I?
-git add .                   # Stage all changes
-git commit -m "message"     # Save snapshot
-git push                    # Push to GitHub
+python3 add_transit.py --execute    # Actually create calendar events
+python3 add_transit.py --car-only   # Force driving mode (skip transit)
 
 # If you need to re-authenticate (after scope change)
 rm token.json

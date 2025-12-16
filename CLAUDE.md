@@ -16,10 +16,11 @@ See:
 ## Current Projects
 
 ### calendar-experiments/
-Calendar Transit Robot — automatically creates "transit" events before/after meetings using Google Maps Routes API. Current priority: finish as a quick win.
+Calendar Transit Robot — automatically creates "transit" events before/after meetings using Google Maps Routes API. **Status: LP1 complete.** Ready for GitHub/LinkedIn publication.
 
 ```bash
-cd calendar-experiments && python add_transit.py  # dry-run mode
+cd calendar-experiments && python add_transit.py           # dry-run mode
+cd calendar-experiments && python add_transit.py --execute # create events
 ```
 
 ### investment-db-experiments/
