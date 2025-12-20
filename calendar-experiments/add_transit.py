@@ -225,6 +225,20 @@ def get_location_name(location):
     return name
 
 
+def check_car_only_location(address: str, config: dict) -> tuple:
+    """
+    Check if address matches any car-only location patterns.
+
+    Returns: (is_car_only, matched_pattern) for debugging/logging.
+    """
+    car_only = config.get('user', {}).get('car_only_locations', [])
+    address_lower = address.lower()
+    for pattern in car_only:
+        if pattern.lower() in address_lower:
+            return True, pattern
+    return False, None
+
+
 def format_departure_time_for_api(dt):
     """Format datetime as RFC 3339 UTC for Routes API."""
     # Convert to UTC if timezone-aware, otherwise assume already appropriate
@@ -356,8 +370,9 @@ def get_home_for_transit(date_str, direction, events, config):
     if stay_location:
         return stay_location, get_location_name(stay_location)
     else:
-        # Fall back to config home address
-        return config.get('home_address', '1000 Union St, Brooklyn, NY'), "Home"
+        # Fall back to config home address (check user section first, then root level)
+        home = config.get('user', {}).get('home_address') or config.get('home_address', '1000 Union St, Brooklyn, NY')
+        return home, "Home"
 
 
 def calculate_transit_events(events, config, ignore_trips=False, force_drive=False):
@@ -428,6 +443,19 @@ def calculate_transit_events(events, config, ignore_trips=False, force_drive=Fal
                 estimated_departure = event_start - datetime.timedelta(minutes=60)
                 departure_time_str = format_departure_time_for_api(estimated_departure)
 
+            # Check if origin or destination is a car-only location
+            origin_car_only, origin_match = check_car_only_location(previous_location, config)
+            dest_car_only, dest_match = check_car_only_location(location, config)
+            location_force_drive = origin_car_only or dest_car_only
+            final_force_drive = force_drive or location_force_drive
+
+            # Build car-only reason for logging/metadata
+            car_only_reason = None
+            if origin_car_only:
+                car_only_reason = f"origin matched '{origin_match}'"
+            elif dest_car_only:
+                car_only_reason = f"destination matched '{dest_match}'"
+
             # Calculate transit TO this event
             try:
                 transit_time = get_transit_time(
@@ -435,7 +463,7 @@ def calculate_transit_events(events, config, ignore_trips=False, force_drive=Fal
                     destination=location,
                     use_stub=False,
                     departure_time=departure_time_str,
-                    force_drive=force_drive
+                    force_drive=final_force_drive
                 )
             except RuntimeError as e:
                 print(f"         (skipping transit: {e})")
@@ -471,7 +499,8 @@ def calculate_transit_events(events, config, ignore_trips=False, force_drive=Fal
                 continue
 
             destination_name = get_location_name(location)
-            transit_summary = f"TRANSIT: {previous_location_name} → {destination_name}"
+            prefix = "DRIVE" if transit_time['mode'] == 'driving' else "TRANSIT"
+            transit_summary = f"{prefix}: {previous_location_name} → {destination_name}"
 
             # Build metadata with optional blending info
             metadata = {
@@ -480,6 +509,8 @@ def calculate_transit_events(events, config, ignore_trips=False, force_drive=Fal
                 'is_stub': transit_time['is_stub'],
                 'for_event': summary
             }
+            if car_only_reason:
+                metadata['car_only_reason'] = car_only_reason
             if transit_time.get('best_guess_minutes') is not None:
                 metadata['best_guess_minutes'] = transit_time['best_guess_minutes']
             if transit_time.get('pessimistic_minutes') is not None:
@@ -505,13 +536,14 @@ def calculate_transit_events(events, config, ignore_trips=False, force_drive=Fal
 
             transit_events.append(transit_event)
 
-            # Console output with blending info
+            # Console output with blending info and car-only reason
             mode_str = 'car' if transit_time['mode'] == 'driving' else 'transit'
-            if transit_time.get('is_blended'):
-                blend_info = f" (blended: {transit_time['best_guess_minutes']} best / {transit_time['pessimistic_minutes']} pessimistic)"
-            else:
-                blend_info = ""
-            print(f"         + TRANSIT from {previous_location_name} to {destination_name}: {transit_time['duration_minutes']} min by {mode_str}{blend_info}")
+            mode_suffix = ""
+            if car_only_reason:
+                mode_suffix = f" (car-only: {car_only_reason})"
+            elif transit_time.get('is_blended'):
+                mode_suffix = f" (blended: {transit_time['best_guess_minutes']} best / {transit_time['pessimistic_minutes']} pessimistic)"
+            print(f"         + TRANSIT from {previous_location_name} to {destination_name}: {transit_time['duration_minutes']} min by {mode_str}{mode_suffix}")
 
             # Update previous location and event end for next iteration
             previous_location = location
@@ -533,13 +565,26 @@ def calculate_transit_events(events, config, ignore_trips=False, force_drive=Fal
                 event_end = parse_datetime(last_event['end']['dateTime'])
                 departure_time_str = format_departure_time_for_api(event_end)
 
+                # Check if origin or destination is a car-only location
+                origin_car_only, origin_match = check_car_only_location(previous_location, config)
+                dest_car_only, dest_match = check_car_only_location(evening_home, config)
+                location_force_drive = origin_car_only or dest_car_only
+                final_force_drive = force_drive or location_force_drive
+
+                # Build car-only reason for logging/metadata
+                car_only_reason = None
+                if origin_car_only:
+                    car_only_reason = f"origin matched '{origin_match}'"
+                elif dest_car_only:
+                    car_only_reason = f"destination matched '{dest_match}'"
+
                 try:
                     transit_time = get_transit_time(
                         origin=previous_location,
                         destination=evening_home,
                         use_stub=False,
                         departure_time=departure_time_str,
-                        force_drive=force_drive
+                        force_drive=final_force_drive
                     )
                 except RuntimeError as e:
                     print(f"         (skipping transit home: {e})")
@@ -569,6 +614,8 @@ def calculate_transit_events(events, config, ignore_trips=False, force_drive=Fal
                     'is_stub': transit_time['is_stub'],
                     'for_event': 'return home'
                 }
+                if car_only_reason:
+                    metadata['car_only_reason'] = car_only_reason
                 if transit_time.get('best_guess_minutes') is not None:
                     metadata['best_guess_minutes'] = transit_time['best_guess_minutes']
                 if transit_time.get('pessimistic_minutes') is not None:
@@ -582,8 +629,9 @@ def calculate_transit_events(events, config, ignore_trips=False, force_drive=Fal
                 if transit_time.get('is_blended'):
                     description += " (Transit duration is longer than usual at this time due to traffic.)"
 
+                prefix = "DRIVE" if transit_time['mode'] == 'driving' else "TRANSIT"
                 transit_event = {
-                    'summary': f"TRANSIT: {previous_location_name} → {evening_home_name}",
+                    'summary': f"{prefix}: {previous_location_name} → {evening_home_name}",
                     'location': previous_location,
                     'colorId': transit_color,
                     'start': format_datetime(event_end),
@@ -594,13 +642,14 @@ def calculate_transit_events(events, config, ignore_trips=False, force_drive=Fal
 
                 transit_events.append(transit_event)
 
-                # Console output with blending info
+                # Console output with blending info and car-only reason
                 mode_str = 'car' if transit_time['mode'] == 'driving' else 'transit'
-                if transit_time.get('is_blended'):
-                    blend_info = f" (blended: {transit_time['best_guess_minutes']} best / {transit_time['pessimistic_minutes']} pessimistic)"
-                else:
-                    blend_info = ""
-                print(f"         + TRANSIT from {previous_location_name} to {evening_home_name}: {transit_time['duration_minutes']} min by {mode_str}{blend_info}")
+                mode_suffix = ""
+                if car_only_reason:
+                    mode_suffix = f" (car-only: {car_only_reason})"
+                elif transit_time.get('is_blended'):
+                    mode_suffix = f" (blended: {transit_time['best_guess_minutes']} best / {transit_time['pessimistic_minutes']} pessimistic)"
+                print(f"         + TRANSIT from {previous_location_name} to {evening_home_name}: {transit_time['duration_minutes']} min by {mode_str}{mode_suffix}")
 
     return transit_events
 
@@ -677,8 +726,12 @@ def main():
 
     # Load config
     config = load_config()
-    print(f"Home address: {config.get('home_address')}")
+    home_address = config.get('user', {}).get('home_address') or config.get('home_address')
+    car_only_locations = config.get('user', {}).get('car_only_locations', [])
+    print(f"Home address: {home_address}")
     print(f"Transit color ID: {config.get('transit_color_id')}")
+    if car_only_locations:
+        print(f"Car-only locations: {car_only_locations}")
     if args.car_only:
         print("Mode: CAR ONLY (skipping public transit)")
 
