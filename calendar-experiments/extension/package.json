@@ -1,0 +1,21 @@
+{
+  "name": "calendar-transit-extension",
+  "version": "1.0.0",
+  "description": "Chrome extension for automatically creating transit events",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "bun run build:popup && bun run build:copy",
+    "build:popup": "bun build popup/popup.ts --outdir=dist --target=browser --minify",
+    "build:copy": "cp manifest.json dist/ && cp -r icons dist/ && cp popup/popup.html dist/ && cp popup/popup.css dist/",
+    "dev": "bun run build",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/chrome": "^0.1.32"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}

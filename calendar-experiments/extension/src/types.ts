@@ -1,0 +1,62 @@
+/**
+ * Type definitions for Calendar Transit Extension
+ */
+
+// Google Calendar API event structure (partial, what we use)
+export interface CalendarEvent {
+  id: string;
+  summary?: string;
+  location?: string;
+  start: {
+    dateTime?: string;  // ISO 8601 format
+    date?: string;      // YYYY-MM-DD for all-day events
+    timeZone?: string;
+  };
+  end: {
+    dateTime?: string;
+    date?: string;
+    timeZone?: string;
+  };
+  colorId?: string;
+  conferenceData?: object;  // Present if it's a video call
+  description?: string;
+}
+
+// Transit event we create
+export interface TransitEvent {
+  summary: string;
+  location: string;
+  colorId: string;
+  start: {
+    dateTime: string;
+    timeZone: string;
+  };
+  end: {
+    dateTime: string;
+    timeZone: string;
+  };
+  description: string;
+}
+
+// Result from Routes API
+export interface RouteResult {
+  durationMinutes: number;
+  distanceMeters: number;
+  mode: 'transit' | 'driving';
+}
+
+// User settings stored in chrome.storage
+export interface UserSettings {
+  homeAddress: string;
+  daysForward: number;
+  transitColorId: string;
+}
+
+// Skip result for event filtering
+export interface SkipResult {
+  shouldSkip: boolean;
+  reason: string;
+}
+
+// Events grouped by date
+export type EventsByDay = Record<string, CalendarEvent[]>;
