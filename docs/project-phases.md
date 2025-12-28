@@ -123,55 +123,65 @@ This breaks the seal on "showing work in public" with low stakes—it's a small 
 ### Why This Phase
 The Calendar Transit Tool is useful—but only you can use it. Shipping it as a Chrome extension builds the "ship a product" muscle and teaches cloud deployment.
 
-### Architecture Decision (to be made at LP4 start)
+### Architecture Decision
 
 | Option | Pros | Cons | Skills Learned |
 |--------|------|------|----------------|
 | **TypeScript rewrite** | Pure client-side, no hosting | More rewrite work | TS, browser APIs |
 | **Python API backend** | Reuses existing code | Needs hosting | **Cloud VMs, Docker, deployment** |
 
-**Leaning:** TypeScript, BUT the Python backend path teaches cloud deployment—a skill worth having. Could do Python backend first (learn deployment), then optionally rewrite to TypeScript later for a serverless version.
+**Current path:** TypeScript (pure client-side). The Python backend path remains an option if the current architecture proves unsatisfactory—it would teach cloud deployment skills.
 
-### Step 1: Extract Transit Engine Library
-
-**Tasks:**
-- [ ] Refactor `transit_calculator.py` into clean, documented module
-- [ ] Define clear API surface
-- [ ] Make architecture decision (TS vs Python backend)
-
-### Step 2: Backend or Rewrite
-
-**If Python backend:**
+**If Python backend (future option):**
 - [ ] Wrap in FastAPI
 - [ ] Dockerize
 - [ ] Deploy to cloud VM (DigitalOcean, Fly.io, Railway, etc.)
 - [ ] Set up domain/HTTPS
 
-**If TypeScript:**
-- [ ] Port core logic to TypeScript
-- [ ] Package as ES module
-
 **Conceptual learning:**
 - Cloud deployment (VMs, Docker, HTTPS)
 - API design for external consumers
-- TypeScript fundamentals (if that path)
+- TypeScript fundamentals
 
-### Step 3: Chrome Extension
+### Step 1: MVP Implementation ✓ (2025-12-27)
 
-**Tasks:**
-- [ ] Extension manifest v3 setup
-- [ ] OAuth flow for Google Calendar in extension context
-- [ ] UI: Popup with "Process my calendar" button (simplest MVP)
-- [ ] Connect to backend or use client-side library
+**Completed:**
+- [x] Extension manifest v3 setup with Bun bundler
+- [x] OAuth flow via `chrome.identity.launchWebAuthFlow()`
+- [x] Background service worker for OAuth (persists when popup closes)
+- [x] Calendar API integration (fetch events, insert transit events)
+- [x] Routes API integration (transit times with driving fallback)
+- [x] Popup UI with scan → preview → create flow
+- [x] Basic filtering (skip video calls, all-day, existing transit)
 
 **Conceptual learning:**
 - Chrome extension architecture (manifest v3, service workers)
-- OAuth in browser extensions
+- OAuth in browser extensions (popup closes during auth → need background worker)
 - Product thinking: What's the simplest UX that works?
+
+### Step 2: Feature Parity with CLI
+
+**Tasks to match `add_transit.py` functionality:**
+- [ ] Car-only locations (patterns like "22 Lakeview" → always use driving)
+- [ ] Traffic-aware routing (BEST_GUESS + PESSIMISTIC blending)
+- [ ] Trip detection (flights, hotel stays → dynamic home location)
+- [ ] Hold event skipping (colorId 8)
+- [ ] Overlap detection between transit events
+
+### Step 3: UX Polish
+
+**Tasks:**
+- [ ] Better button copy ("Scan Calendar to Add Transit Events")
+- [ ] Driving preference toggle in settings (always drive vs transit fallback)
+- [ ] Configurable car-only location patterns in settings
+- [ ] Progress indicators during scan
+- [ ] Onboarding flow for first-time users
+- [ ] Architecture review: Is background worker over-engineered?
 
 ### Step 4: Publish
 
 **Tasks:**
+- [ ] Rotate credentials (API key + OAuth) before any public release
 - [ ] Chrome Web Store developer account ($5)
 - [ ] Store listing, screenshots, privacy policy
 - [ ] Submit for review
@@ -182,6 +192,11 @@ The Calendar Transit Tool is useful—but only you can use it. Shipping it as a 
 - Chrome Web Store listing
 - LinkedIn post: "I shipped my first Chrome extension"
 - (Optional) Blog post on the journey from script → product
+
+### Files
+- `calendar-experiments/extension/` - Extension source code
+- `calendar-experiments/extension/CLAUDE.md` - Setup instructions
+- Branch: `feature/chrome-extension`
 
 ---
 
