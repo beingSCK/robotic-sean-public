@@ -178,6 +178,18 @@ The Calendar Transit Tool is useful—but only you can use it. Shipping it as a 
 - [ ] Onboarding flow for first-time users
 - [ ] Architecture review: Is background worker over-engineered?
 
+### 🎯 Recommended Next Session
+
+**Quick wins (30-60 min each):**
+1. **Car-only toggle** - Add a simple checkbox in settings: "Always use driving (no transit)". Easiest feature parity item, immediately useful for your 22 Lakeview case.
+2. **Better button copy** - Change "Scan Calendar" → "Add Transit Events". Small UX win, 5 minutes.
+
+**Medium effort (1-2 hours):**
+3. **Car-only location patterns** - Add a text field in settings for comma-separated patterns. Port the matching logic from CLI's `config.json`.
+
+**If feeling ambitious:**
+4. **Architecture review** - Research if `chrome.tabs` API could replace background worker. The current approach works but feels over-engineered.
+
 ### Step 4: Publish
 
 **Tasks:**
