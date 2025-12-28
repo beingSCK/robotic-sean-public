@@ -1,62 +1,59 @@
 # Project Phases: Detailed Task Lists
 
-Detailed implementation plans for each project. See `ROADMAP.md` for the overall philosophy and status.
+Detailed implementation plans for each project. See `ROADMAP.md` for philosophy and principles.
+
+**Last updated:** 2025-12-27
 
 ---
 
-## LP1: Finish the Calendar Tool
+## Calendar Transit Tool (CLI) — ✓ COMPLETE
 
-### Why This First
-You're one step away from a working tool. The psychological reward of seeing transit events appear in your actual calendar is the fuel for everything else.
+Python script that creates transit events before/after meetings using Google Calendar + Routes APIs.
 
-### Step 1: Real API Integration ✓
+### What Was Built
 
-**Tasks:**
-- [x] Add Routes API key to `config.json`
-- [x] Implement real HTTP call in `transit_calculator.py` (replace stub)
-- [x] Test with real travel times
+- [x] Real Google Routes API integration (replaced stubs)
 - [x] Handle edge cases (API errors, missing routes)
-- [x] Add `--test` CLI for standalone testing
-- [x] Add `'stay:'` to trip detection keywords
+- [x] OAuth flow with `calendar` scope (read + write)
+- [x] `--execute` mode creates real events in Google Calendar
+- [x] Skip creating transit events if duration < 10 minutes
+- [x] Skip creating transit events if they would overlap with existing transit events
+- [x] Dynamic home location from Stay events (for travel days)
+- [x] Traffic-aware routing (BEST_GUESS + PESSIMISTIC blending, 75% pessimistic weight)
+- [x] Traffic notes added to event descriptions when duration extended
+- [x] Sanity check: skip transits > 3 hours
 
 **Conceptual learning:**
 - REST API integration patterns
 - Error handling and graceful degradation
 - The difference between "it works in stub mode" and "it works for real"
-
-**Definition of Done:** `python add_transit.py` shows accurate travel times from Google Routes API. ✓ DONE
-
-### Step 1.5: Transit Event Logic Refinements ✓
-
-**Tasks:**
-- [x] Skip creating transit events if duration < 10 minutes
-- [x] Skip creating transit events if they would overlap with existing transit events
-- [x] Flip trip detection default (process all days; add `--detect-trips` to enable skipping)
-
-**Definition of Done:** Running `--execute` doesn't create redundant or trivially short transit events. ✓ DONE
-
-### Step 1.6: Dynamic "Home" Based on Stay Events ✓
-
-**Goal:** On travel days, use the location from "Stay" events as the home location instead of the fixed config address. This makes transit work correctly when traveling.
-
-**Tasks:**
-- [x] Extend existing stay detection (reuse `STAY_KEYWORDS`) to also extract the location
-- [x] On-demand lookup: `get_stay_location_for_night()` finds Stay event covering a given night
-- [x] `get_home_for_transit()` returns prior night's stay (morning) or tonight's stay (evening)
-- [x] For transit TO first event: use prior night's Stay location as origin
-- [x] For transit HOME after last event: use that night's Stay location as destination
-- [x] If no Stay event exists for a date, fall back to config home address
-- [x] Add error handling (try/except around Routes API calls)
-- [x] Add sanity check: skip transits > 3 hours
-
-**Conceptual learning:**
 - State management across days (tracking where you "are" vs where you're "going")
-- Graceful fallback patterns
-- Error handling for external API failures
+- Traffic-aware routing with the Routes API
+- Conservative estimation strategies (blending pessimistic/optimistic)
 
-**Definition of Done:** Running on a travel week correctly uses hotel/stay locations as the "home" for each day's transit calculations. ✓ DONE
+**Definition of Done:** ✓ Met
+- `python add_transit.py` shows accurate travel times from Google Routes API
+- `python add_transit.py --execute` creates real transit events in Google Calendar
+- Code published to GitHub: [robotic-sean-public](https://github.com/beingSCK/robotic-sean-public)
 
-### Step 1.7: AI-Assisted Location for Stay Events (Future)
+### Public Output
+
+**GitHub:**
+- [x] Clean up repo, ensure README explains usage
+- [x] Remove any hardcoded personal details
+- [x] Add MIT license
+- [x] Push to public repo
+
+**LinkedIn post (~200 words):**
+- [ ] Theme: "I built a tool that solves a real problem I had"
+- The pain point (manually adding transit time to calendar)
+- What I built (Python script using Google Calendar + Routes APIs)
+- What I learned (OAuth flows, API integration, phased development)
+- Link to repo
+
+This breaks the seal on "showing work in public" with low stakes—it's a small tool, not a startup pitch.
+
+### Future Enhancement: AI-Assisted Location for Stay Events
 
 **Goal:** Use an AI service to guess the location for Stay events that don't have a location field set.
 
@@ -67,61 +64,15 @@ You're one step away from a working tool. The psychological reward of seeing tra
 
 **Note:** Low priority. For now, ensure Stay events have location fields set manually.
 
-### Step 1.8: Traffic-Aware Routing ✓
-
-**Goal:** Use departure time and traffic models for more accurate travel time estimates.
-
-**Tasks:**
-- [x] Pass `departureTime` to Routes API for traffic predictions
-- [x] Query both BEST_GUESS and PESSIMISTIC traffic models for driving routes
-- [x] Blend results (75% pessimistic weight) when difference > 25%
-- [x] Add traffic note to event description when blended
-- [x] Include blending metadata in output
-
-**Conceptual learning:**
-- Traffic-aware routing with the Routes API
-- Handling API parameters for predictive estimates
-- Conservative estimation strategies (blending pessimistic/optimistic)
-
-**Definition of Done:** Transit events use traffic-aware estimates and show when duration was extended due to traffic. ✓ DONE
-
-### Step 2: Execute Mode ✓
-
-**Tasks:**
-- [x] Change OAuth scope from `calendar.readonly` to `calendar`
-- [x] Delete `token.json`, re-authenticate
-- [x] Implement `insert_transit_events()` function
-- [x] Add safeguards (`--force` flag for confirmation prompt)
-
-**Definition of Done:** `python add_transit.py --execute` creates real transit events in your Google Calendar. ✓ DONE
-
-### Public Output: GitHub + LinkedIn
-
-**GitHub:**
-- Clean up repo, ensure README explains usage
-- Remove any hardcoded personal details
-- Add MIT license (already done)
-- Push to public repo
-
-**LinkedIn post (~200 words):**
-```
-Theme: "I built a tool that solves a real problem I had"
-- The pain point (manually adding transit time to calendar)
-- What I built (Python script using Google Calendar + Routes APIs)
-- What I learned (OAuth flows, API integration, phased development)
-- Link to repo
-```
-
-This breaks the seal on "showing work in public" with low stakes—it's a small tool, not a startup pitch.
-
 ---
 
-## LP4: Calendar Tool → Chrome Extension
+## Calendar Transit Tool (Chrome Extension) — IN PROGRESS
 
-*This phase comes after LP3 (Chatbot basics). By then you'll have more TypeScript/JS exposure.*
+Browser extension that does what the CLI does, but accessible to non-technical users.
 
 ### Why This Phase
-The Calendar Transit Tool is useful—but only you can use it. Shipping it as a Chrome extension builds the "ship a product" muscle and teaches cloud deployment.
+
+The Calendar Transit Tool is useful—but only you can use it. Shipping it as a Chrome extension builds the "ship a product" muscle and teaches browser extension development.
 
 ### Architecture Decision
 
@@ -138,14 +89,9 @@ The Calendar Transit Tool is useful—but only you can use it. Shipping it as a 
 - [ ] Deploy to cloud VM (DigitalOcean, Fly.io, Railway, etc.)
 - [ ] Set up domain/HTTPS
 
-**Conceptual learning:**
-- Cloud deployment (VMs, Docker, HTTPS)
-- API design for external consumers
-- TypeScript fundamentals
+### MVP Status: ✓ DONE (2025-12-27)
 
-### Step 1: MVP Implementation ✓ (2025-12-27)
-
-**Completed:**
+**What was built:**
 - [x] Extension manifest v3 setup with Bun bundler
 - [x] OAuth flow via `chrome.identity.launchWebAuthFlow()`
 - [x] Background service worker for OAuth (persists when popup closes)
@@ -153,13 +99,27 @@ The Calendar Transit Tool is useful—but only you can use it. Shipping it as a 
 - [x] Routes API integration (transit times with driving fallback)
 - [x] Popup UI with scan → preview → create flow
 - [x] Basic filtering (skip video calls, all-day, existing transit)
+- [x] Credential rotation and git history rewrite for security
 
 **Conceptual learning:**
 - Chrome extension architecture (manifest v3, service workers)
 - OAuth in browser extensions (popup closes during auth → need background worker)
 - Product thinking: What's the simplest UX that works?
+- Git history rewriting (`git filter-branch`) for removing secrets
 
-### Step 2: Feature Parity with CLI
+**Key technical decision:** OAuth in browser extensions is tricky because the popup closes when user clicks the OAuth window. Solution: background service worker handles OAuth, stores tokens, sets a flag. When popup reopens, it checks for `oauthJustCompleted` and auto-scans.
+
+### Next Steps (Path to Publish)
+
+1. **Family testing** — Have family members install and use it
+2. **Chrome Web Store** — $5 developer account, store listing, privacy policy, submit for review
+3. **LinkedIn post** — "I shipped my first Chrome extension"
+
+**Definition of Done:** Extension live on Chrome Web Store, at least 1 external user.
+
+### Feature Parity with CLI (After Publish)
+
+These items are nice-to-have polish, not blockers for initial publish:
 
 **Tasks to match `add_transit.py` functionality:**
 - [ ] Car-only locations (patterns like "22 Lakeview" → always use driving)
@@ -168,53 +128,45 @@ The Calendar Transit Tool is useful—but only you can use it. Shipping it as a 
 - [ ] Hold event skipping (colorId 8)
 - [ ] Overlap detection between transit events
 
-### Step 3: UX Polish
+### UX Polish (After Publish)
 
-**Tasks:**
 - [ ] Better button copy ("Scan Calendar to Add Transit Events")
 - [ ] Driving preference toggle in settings (always drive vs transit fallback)
 - [ ] Configurable car-only location patterns in settings
 - [ ] Progress indicators during scan
 - [ ] Onboarding flow for first-time users
-- [ ] Architecture review: Is background worker over-engineered?
 
-### 🎯 Recommended Next Session
+### Recommended Next Session (After Publish)
 
 **Quick wins (30-60 min each):**
-1. **Car-only toggle** - Add a simple checkbox in settings: "Always use driving (no transit)". Easiest feature parity item, immediately useful for your 22 Lakeview case.
-2. **Better button copy** - Change "Scan Calendar" → "Add Transit Events". Small UX win, 5 minutes.
+1. **Car-only toggle** — Add a simple checkbox in settings: "Always use driving (no transit)". Easiest feature parity item, immediately useful for your 22 Lakeview case.
+2. **Better button copy** — Change "Scan Calendar" → "Add Transit Events". Small UX win, 5 minutes.
 
 **Medium effort (1-2 hours):**
-3. **Car-only location patterns** - Add a text field in settings for comma-separated patterns. Port the matching logic from CLI's `config.json`.
+3. **Car-only location patterns** — Add a text field in settings for comma-separated patterns. Port the matching logic from CLI's `config.json`.
 
 **If feeling ambitious:**
-4. **Architecture review** - Research if `chrome.tabs` API could replace background worker. The current approach works but feels over-engineered.
-
-### Step 4: Publish
-
-**Tasks:**
-- [ ] Rotate credentials (API key + OAuth) before any public release
-- [ ] Chrome Web Store developer account ($5)
-- [ ] Store listing, screenshots, privacy policy
-- [ ] Submit for review
-
-**Definition of Done:** Extension live on Chrome Web Store, at least 1 external user.
+4. **Architecture review** — Research if `chrome.tabs` API could replace background worker. The current approach works but feels over-engineered.
 
 ### Public Output
+
 - Chrome Web Store listing
 - LinkedIn post: "I shipped my first Chrome extension"
 - (Optional) Blog post on the journey from script → product
 
 ### Files
-- `calendar-experiments/extension/` - Extension source code
-- `calendar-experiments/extension/CLAUDE.md` - Setup instructions
+- `calendar-experiments/extension/` — Extension source code
+- `calendar-experiments/extension/CLAUDE.md` — Setup instructions
 - Branch: `feature/chrome-extension`
 
 ---
 
-## LP2: Investment Email Processing (formerly Phase 2)
+## Investment Email Processing — NEXT
+
+Parse investment-related emails from Google Takeout and build a queryable database.
 
 ### Why This Project
+
 You have 30GB of real data (Google Takeout emails) and a real use case (tax prep, portfolio tracking). This is where the "AI agent" roadmap becomes practical.
 
 ### Step 1: Email Extraction Pipeline
@@ -273,9 +225,12 @@ This project is meatier and deserves a longer writeup:
 
 ---
 
-## LP3: Agent Wrapper (Chatbot Rebuild)
+## Agent Wrapper / Chatbot — LATER
+
+Learn agent patterns by rebuilding a chatbot from scratch, then apply to investment queries.
 
 ### Why This Phase
+
 Once RAG is working, wrapping it in an "agent" is relatively straightforward. The reference material in `chatbot-rebuild/` shows the pattern—now we build our own to truly understand it.
 
 ### Step 1: Basic Agent Loop
@@ -316,9 +271,15 @@ As projects grow in complexity (Chrome extensions, full-stack apps), consider up
 
 | Tool | Best For | When to Use |
 |------|----------|-------------|
-| **Claude Code CLI** | Scripts, single-file tools, quick iterations | LP1-LP3 (current phase) |
-| **Cursor / AI IDE** | Multi-file projects, TypeScript, debugging | LP4+ (Chrome extension, larger apps) |
+| **Claude Code CLI** | Scripts, single-file tools, quick iterations | Calendar CLI, Investment DB |
+| **Cursor / AI IDE** | Multi-file projects, TypeScript, debugging | Chrome extension, larger apps |
 
-**Don't upgrade prematurely**—the current tools work fine for LP1-LP3. But LP4 (Chrome extension with TypeScript) may be the right time to try Cursor or a similar AI-assisted IDE.
+**Don't upgrade prematurely**—the current tools work fine for simple projects. But multi-file TypeScript projects may benefit from Cursor or similar AI-assisted IDEs.
 
 The goal isn't to use the fanciest tools. It's to use the simplest tools that get the job done, and upgrade when the complexity genuinely warrants it.
+
+---
+
+## Historical Note
+
+The original planning used "LP1/LP2/LP3/LP4" numbering which became confusing when execution order diverged from plan order. This document was restructured on 2025-12-27 to match actual execution sequence: CLI → Extension → Investment → Chatbot.

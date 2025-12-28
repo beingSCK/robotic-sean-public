@@ -13,15 +13,36 @@ See:
 - `docs/project-phases.md` - Detailed task lists for each project
 - `docs/ai-concepts-reference.md` - Conceptual explanations and resources
 
+## Current Status (2025-12-27)
+
+| Project | Status | Branch |
+|---------|--------|--------|
+| Calendar Transit CLI | ✓ Complete | `main` |
+| Calendar Transit Extension | **Active** - MVP done, publishing next | `feature/chrome-extension` |
+| Investment Email Processing | Next | — |
+| Agent/Chatbot | Later | — |
+
 ## Current Projects
 
 ### calendar-experiments/
-Calendar Transit Robot — automatically creates "transit" events before/after meetings using Google Maps Routes API. **Status: LP1 complete.** Ready for GitHub/LinkedIn publication.
+Calendar Transit Robot — automatically creates "transit" events before/after meetings using Google Maps Routes API.
 
+**CLI (complete):**
 ```bash
 cd calendar-experiments && python add_transit.py           # dry-run mode
 cd calendar-experiments && python add_transit.py --execute # create events
 ```
+Published: [robotic-sean-public](https://github.com/beingSCK/robotic-sean-public)
+
+**Chrome Extension (in progress):**
+```bash
+cd calendar-experiments/extension
+bun install
+bun run build && bun run build:background
+# Load unpacked extension from dist/ in Chrome
+```
+Setup: See `calendar-experiments/extension/CLAUDE.md`
+Branch: `feature/chrome-extension`
 
 ### investment-db-experiments/
 Investment portfolio tracker using SQLite. Goal: Parse emails from Google Takeout, build a RAG pipeline for natural language queries about investments.
