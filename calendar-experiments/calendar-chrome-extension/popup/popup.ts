@@ -6,6 +6,12 @@ import type { UserSettings, TransitEvent } from '../src/types.ts';
 import { DEFAULT_SETTINGS } from '../src/config.ts';
 import { fetchEvents, insertTransitEvents } from '../src/calendarService.ts';
 import { calculateTransitEvents } from '../src/eventProcessor.ts';
+import {
+  hasTokens,
+  onAuthComplete,
+  clearAuthCompleteFlag,
+  clearAuth,
+} from '../src/authManager.ts';
 
 // DOM Elements
 let homeAddressInput: HTMLInputElement;
@@ -22,6 +28,7 @@ let cancelBtn: HTMLButtonElement;
 let successSection: HTMLDivElement;
 let successCount: HTMLSpanElement;
 let doneBtn: HTMLButtonElement;
+let disconnectBtn: HTMLButtonElement;
 
 // State
 let currentTransitEvents: TransitEvent[] = [];
@@ -133,42 +140,12 @@ function escapeHtml(text: string): string {
   return div.innerHTML;
 }
 
-/**
- * Check if OAuth just completed (background worker sets this flag).
- */
-async function checkOAuthJustCompleted(): Promise<boolean> {
-  return new Promise((resolve) => {
-    chrome.storage.local.get(['oauthJustCompleted'], (result) => {
-      resolve(result.oauthJustCompleted === true);
-    });
-  });
-}
-
-/**
- * Clear the OAuth just completed flag.
- */
-async function clearOAuthJustCompleted(): Promise<void> {
-  return new Promise((resolve) => {
-    chrome.storage.local.remove(['oauthJustCompleted'], resolve);
-  });
-}
-
-/**
- * Check if we have stored OAuth tokens.
- */
-async function hasStoredTokens(): Promise<boolean> {
-  return new Promise((resolve) => {
-    chrome.storage.local.get(['oauth_tokens'], (result) => {
-      resolve(result.oauth_tokens != null);
-    });
-  });
-}
 
 /**
  * Update the scan button based on auth state.
  */
-function updateScanButton(hasTokens: boolean) {
-  if (hasTokens) {
+function updateScanButton(isAuthenticated: boolean) {
+  if (isAuthenticated) {
     scanBtn.textContent = 'Scan Calendar';
   } else {
     scanBtn.textContent = 'Connect to Google Calendar';
@@ -190,9 +167,9 @@ async function handleScan() {
   }
 
   // Check if we need to authorize first
-  const hasTokens = await hasStoredTokens();
+  const isAuthenticated = await hasTokens();
 
-  if (!hasTokens) {
+  if (!isAuthenticated) {
     // First time - need to authorize
     scanBtn.disabled = true;
     setStatus('Opening Google sign-in... (click extension again after signing in)', false, true);
@@ -264,6 +241,16 @@ async function handleCreate() {
 }
 
 /**
+ * Handle disconnect button click.
+ */
+async function handleDisconnect() {
+  await clearAuth();
+  updateScanButton(false);
+  disconnectBtn.hidden = true;
+  setStatus('Disconnected from Google Calendar');
+}
+
+/**
  * Handle save settings button click.
  */
 async function handleSaveSettings() {
@@ -306,6 +293,7 @@ async function init() {
   successSection = document.getElementById('success-section') as HTMLDivElement;
   successCount = document.getElementById('success-count') as HTMLSpanElement;
   doneBtn = document.getElementById('done-btn') as HTMLButtonElement;
+  disconnectBtn = document.getElementById('disconnect-btn') as HTMLButtonElement;
 
   // Load settings
   currentSettings = await loadSettings();
@@ -318,8 +306,9 @@ async function init() {
   }
 
   // Check auth state and update button
-  const hasTokens = await hasStoredTokens();
-  updateScanButton(hasTokens);
+  const isAuthenticated = await hasTokens();
+  updateScanButton(isAuthenticated);
+  disconnectBtn.hidden = !isAuthenticated;
 
   // Add event listeners
   saveSettingsBtn.addEventListener('click', handleSaveSettings);
@@ -327,16 +316,17 @@ async function init() {
   createBtn.addEventListener('click', handleCreate);
   cancelBtn.addEventListener('click', resetUI);
   doneBtn.addEventListener('click', resetUI);
+  disconnectBtn.addEventListener('click', handleDisconnect);
 
   // Save settings on input change (debounced via blur)
   homeAddressInput.addEventListener('blur', handleSaveSettings);
   daysForwardInput.addEventListener('blur', handleSaveSettings);
 
   // Check if OAuth just completed (background worker sets this flag)
-  const oauthJustCompleted = await checkOAuthJustCompleted();
+  const oauthJustCompleted = await onAuthComplete();
   console.log('Init check - oauthJustCompleted:', oauthJustCompleted, 'homeAddress:', currentSettings.homeAddress);
   if (oauthJustCompleted) {
-    await clearOAuthJustCompleted();
+    await clearAuthCompleteFlag();
     updateScanButton(true); // We now have tokens
 
     if (currentSettings.homeAddress) {

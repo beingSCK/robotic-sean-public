@@ -3,6 +3,8 @@
  * Handles OAuth flow so it persists even when popup closes.
  */
 
+import type { TokenData } from './types.ts';
+import { STORAGE_KEYS } from './types.ts';
 import {
   OAUTH_CLIENT_ID,
   OAUTH_CLIENT_SECRET,
@@ -10,12 +12,6 @@ import {
 } from './config.ts';
 
 const TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token';
-
-interface TokenData {
-  access_token: string;
-  refresh_token?: string;
-  expires_at: number;
-}
 
 interface OAuthMessage {
   type: 'START_OAUTH';
@@ -31,15 +27,6 @@ interface OAuthResponse {
  */
 function getRedirectUrl(): string {
   return chrome.identity.getRedirectURL();
-}
-
-/**
- * Store tokens in chrome.storage.
- */
-async function storeTokens(tokens: TokenData): Promise<void> {
-  return new Promise((resolve) => {
-    chrome.storage.local.set({ oauth_tokens: tokens }, resolve);
-  });
 }
 
 /**
@@ -115,14 +102,11 @@ async function handleOAuth(): Promise<OAuthResponse> {
           };
 
           // Store tokens
-          await storeTokens(tokens);
+          await chrome.storage.local.set({ [STORAGE_KEYS.OAUTH_TOKENS]: tokens });
           console.log('Background: Tokens stored successfully');
 
-          // Clear pending scan flag since OAuth is complete
-          await chrome.storage.local.set({ pendingScan: false });
-
-          // Set a flag that OAuth just completed so popup knows to scan
-          await chrome.storage.local.set({ oauthJustCompleted: true });
+          // Set flag so popup knows OAuth just completed
+          await chrome.storage.local.set({ [STORAGE_KEYS.OAUTH_JUST_COMPLETED]: true });
 
           resolve({ success: true });
         } catch (err) {

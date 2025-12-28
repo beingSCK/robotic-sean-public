@@ -2,6 +2,19 @@
  * Type definitions for Calendar Transit Extension
  */
 
+// Storage keys - single source of truth for chrome.storage keys
+export const STORAGE_KEYS = {
+  OAUTH_TOKENS: 'oauth_tokens',
+  OAUTH_JUST_COMPLETED: 'oauthJustCompleted',
+} as const;
+
+// OAuth token data stored in chrome.storage.local
+export interface TokenData {
+  access_token: string;
+  refresh_token?: string;
+  expires_at: number; // Unix timestamp in ms
+}
+
 // Google Calendar API event structure (partial, what we use)
 export interface CalendarEvent {
   id: string;

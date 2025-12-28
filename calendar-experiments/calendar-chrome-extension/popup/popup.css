@@ -112,6 +112,17 @@ h2 {
   background: #e0e0e0;
 }
 
+.btn.danger {
+  background: #fff;
+  color: #d32f2f;
+  border: 1px solid #d32f2f;
+  margin-top: 12px;
+}
+
+.btn.danger:hover {
+  background: #ffebee;
+}
+
 /* Action Section */
 .action-section {
   margin-bottom: 16px;
