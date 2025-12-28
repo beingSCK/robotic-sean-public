@@ -5,8 +5,9 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "build": "bun run build:popup && bun run build:copy",
+    "build": "bun run build:popup && bun run build:background && bun run build:copy",
     "build:popup": "bun build popup/popup.ts --outdir=dist --target=browser --minify",
+    "build:background": "bun build src/background.ts --outdir=dist --target=browser --minify",
     "build:copy": "cp manifest.json dist/ && cp -r icons dist/ && cp popup/popup.html dist/ && cp popup/popup.css dist/",
     "dev": "bun run build",
     "clean": "rm -rf dist"

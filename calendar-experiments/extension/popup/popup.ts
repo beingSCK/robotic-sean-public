@@ -110,6 +110,7 @@ function showSuccess(count: number) {
   resultsSection.hidden = true;
   successCount.textContent = count.toString();
   successSection.hidden = false;
+  setStatus(''); // Clear status message
 }
 
 /**
@@ -133,9 +134,53 @@ function escapeHtml(text: string): string {
 }
 
 /**
+ * Check if OAuth just completed (background worker sets this flag).
+ */
+async function checkOAuthJustCompleted(): Promise<boolean> {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(['oauthJustCompleted'], (result) => {
+      resolve(result.oauthJustCompleted === true);
+    });
+  });
+}
+
+/**
+ * Clear the OAuth just completed flag.
+ */
+async function clearOAuthJustCompleted(): Promise<void> {
+  return new Promise((resolve) => {
+    chrome.storage.local.remove(['oauthJustCompleted'], resolve);
+  });
+}
+
+/**
+ * Check if we have stored OAuth tokens.
+ */
+async function hasStoredTokens(): Promise<boolean> {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(['oauth_tokens'], (result) => {
+      resolve(result.oauth_tokens != null);
+    });
+  });
+}
+
+/**
+ * Update the scan button based on auth state.
+ */
+function updateScanButton(hasTokens: boolean) {
+  if (hasTokens) {
+    scanBtn.textContent = 'Scan Calendar';
+  } else {
+    scanBtn.textContent = 'Connect to Google Calendar';
+  }
+}
+
+/**
  * Handle scan button click.
  */
 async function handleScan() {
+  console.log('handleScan called');
+
   // Validate settings
   if (!currentSettings.homeAddress.trim()) {
     settingsSection.open = true;
@@ -144,13 +189,34 @@ async function handleScan() {
     return;
   }
 
+  // Check if we need to authorize first
+  const hasTokens = await hasStoredTokens();
+
+  if (!hasTokens) {
+    // First time - need to authorize
+    scanBtn.disabled = true;
+    setStatus('Opening Google sign-in... (click extension again after signing in)', false, true);
+
+    try {
+      // This will trigger OAuth via background worker
+      // The popup will close during OAuth, so we show a helpful message
+      await fetchEvents(1); // Just trigger auth, don't care about result
+    } catch (error) {
+      // This is expected - popup closes during OAuth
+      // User will click extension again and oauthJustCompleted will be true
+      console.log('Auth flow started, popup may close');
+    }
+    return;
+  }
+
+  // We have tokens - proceed with scan
   scanBtn.disabled = true;
-  setStatus('Connecting to Google Calendar...', false, true);
+  setStatus('Fetching calendar events...', false, true);
 
   try {
-    // Fetch events
-    setStatus('Fetching calendar events...', false, true);
+    console.log('Fetching events...');
     const events = await fetchEvents(currentSettings.daysForward);
+    console.log('Fetched events:', events.length);
 
     if (events.length === 0) {
       setStatus('No events found in the next ' + currentSettings.daysForward + ' days');
@@ -251,6 +317,10 @@ async function init() {
     settingsSection.open = true;
   }
 
+  // Check auth state and update button
+  const hasTokens = await hasStoredTokens();
+  updateScanButton(hasTokens);
+
   // Add event listeners
   saveSettingsBtn.addEventListener('click', handleSaveSettings);
   scanBtn.addEventListener('click', handleScan);
@@ -261,6 +331,23 @@ async function init() {
   // Save settings on input change (debounced via blur)
   homeAddressInput.addEventListener('blur', handleSaveSettings);
   daysForwardInput.addEventListener('blur', handleSaveSettings);
+
+  // Check if OAuth just completed (background worker sets this flag)
+  const oauthJustCompleted = await checkOAuthJustCompleted();
+  console.log('Init check - oauthJustCompleted:', oauthJustCompleted, 'homeAddress:', currentSettings.homeAddress);
+  if (oauthJustCompleted) {
+    await clearOAuthJustCompleted();
+    updateScanButton(true); // We now have tokens
+
+    if (currentSettings.homeAddress) {
+      console.log('OAuth just completed, auto-scanning...');
+      setStatus('Connected! Scanning calendar...', false, true);
+      // Small delay to ensure popup is fully rendered
+      setTimeout(() => handleScan(), 100);
+    } else {
+      setStatus('Connected! Enter your home address to continue.');
+    }
+  }
 }
 
 // Start when DOM is ready

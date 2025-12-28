@@ -6,6 +6,10 @@ out
 dist
 *.tgz
 
+# Secrets - contains API keys and OAuth credentials
+# Copy config.example.ts to config.ts and fill in your values
+src/config.ts
+
 # code coverage
 coverage
 *.lcov

@@ -57,48 +57,22 @@ function getRedirectUrl(): string {
 }
 
 /**
- * Launch OAuth flow using launchWebAuthFlow.
- * Opens a popup window for user to authenticate.
+ * Request OAuth flow from background service worker.
+ * The background worker persists even when popup closes.
  */
-async function launchOAuthFlow(): Promise<{ code: string; redirectUrl: string }> {
-  const redirectUrl = getRedirectUrl();
-
-  const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
-  authUrl.searchParams.set('client_id', OAUTH_CLIENT_ID);
-  authUrl.searchParams.set('redirect_uri', redirectUrl);
-  authUrl.searchParams.set('response_type', 'code');
-  authUrl.searchParams.set('scope', OAUTH_SCOPES.join(' '));
-  authUrl.searchParams.set('access_type', 'offline'); // Get refresh token
-  authUrl.searchParams.set('prompt', 'consent'); // Always show consent to get refresh token
-
+async function requestOAuthFromBackground(): Promise<void> {
   return new Promise((resolve, reject) => {
-    chrome.identity.launchWebAuthFlow(
-      {
-        url: authUrl.toString(),
-        interactive: true,
-      },
-      (responseUrl) => {
-        if (chrome.runtime.lastError) {
-          reject(new Error(chrome.runtime.lastError.message));
-          return;
-        }
-        if (!responseUrl) {
-          reject(new Error('No redirect URL returned'));
-          return;
-        }
-
-        // Parse the authorization code from the redirect URL
-        const url = new URL(responseUrl);
-        const code = url.searchParams.get('code');
-        if (!code) {
-          const error = url.searchParams.get('error');
-          reject(new Error(error || 'No authorization code in redirect'));
-          return;
-        }
-
-        resolve({ code, redirectUrl });
+    chrome.runtime.sendMessage({ type: 'START_OAUTH' }, (response) => {
+      if (chrome.runtime.lastError) {
+        reject(new Error(chrome.runtime.lastError.message));
+        return;
       }
-    );
+      if (response?.success) {
+        resolve();
+      } else {
+        reject(new Error(response?.error || 'OAuth failed'));
+      }
+    });
   });
 }
 
@@ -167,15 +141,22 @@ async function refreshAccessToken(refreshToken: string): Promise<TokenData> {
 
 /**
  * Get a valid access token, refreshing or re-authenticating as needed.
+ * If no tokens exist, delegates to background worker for OAuth.
  */
 export async function getAuthToken(): Promise<string> {
+  console.log('getAuthToken called');
   let tokens = await getStoredTokens();
+  console.log('Stored tokens:', tokens ? 'found' : 'none');
 
-  // If no tokens, start OAuth flow
+  // If no tokens, request OAuth from background worker
   if (!tokens) {
-    const { code, redirectUrl } = await launchOAuthFlow();
-    tokens = await exchangeCodeForTokens(code, redirectUrl);
-    await storeTokens(tokens);
+    console.log('No tokens, requesting OAuth from background...');
+    await requestOAuthFromBackground();
+    console.log('OAuth completed, fetching tokens...');
+    tokens = await getStoredTokens();
+    if (!tokens) {
+      throw new Error('OAuth completed but no tokens found');
+    }
     return tokens.access_token;
   }
 
@@ -188,17 +169,21 @@ export async function getAuthToken(): Promise<string> {
         return tokens.access_token;
       } catch (error) {
         console.error('Token refresh failed, re-authenticating:', error);
-        // Refresh failed, start fresh OAuth flow
-        const { code, redirectUrl } = await launchOAuthFlow();
-        tokens = await exchangeCodeForTokens(code, redirectUrl);
-        await storeTokens(tokens);
+        // Refresh failed, request fresh OAuth from background
+        await requestOAuthFromBackground();
+        tokens = await getStoredTokens();
+        if (!tokens) {
+          throw new Error('OAuth completed but no tokens found');
+        }
         return tokens.access_token;
       }
     } else {
-      // No refresh token, start fresh OAuth flow
-      const { code, redirectUrl } = await launchOAuthFlow();
-      tokens = await exchangeCodeForTokens(code, redirectUrl);
-      await storeTokens(tokens);
+      // No refresh token, request fresh OAuth from background
+      await requestOAuthFromBackground();
+      tokens = await getStoredTokens();
+      if (!tokens) {
+        throw new Error('OAuth completed but no tokens found');
+      }
       return tokens.access_token;
     }
   }
