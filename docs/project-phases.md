@@ -155,9 +155,8 @@ These items are nice-to-have polish, not blockers for initial publish:
 - (Optional) Blog post on the journey from script → product
 
 ### Files
-- `calendar-experiments/extension/` — Extension source code
-- `calendar-experiments/extension/CLAUDE.md` — Setup instructions
-- Branch: `feature/chrome-extension`
+- `calendar-experiments/calendar-chrome-extension/` — Extension source code
+- `calendar-experiments/calendar-chrome-extension/CLAUDE.md` — Setup instructions
 
 ---
 

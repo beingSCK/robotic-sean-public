@@ -371,7 +371,7 @@ def get_home_for_transit(date_str, direction, events, config):
         return stay_location, get_location_name(stay_location)
     else:
         # Fall back to config home address (check user section first, then root level)
-        home = config.get('user', {}).get('home_address') or config.get('home_address', '1000 Union St, Brooklyn, NY')
+        home = config.get('user', {}).get('home_address') or config.get('home_address', '4000 Canyons Resort Drive, Park City, UT 84098')
         return home, "Home"
 
 

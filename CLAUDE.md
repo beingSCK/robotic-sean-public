@@ -27,22 +27,21 @@ See:
 ### calendar-experiments/
 Calendar Transit Robot — automatically creates "transit" events before/after meetings using Google Maps Routes API.
 
-**CLI (complete):**
+**CLI (calendar-cli-tools/):**
 ```bash
-cd calendar-experiments && python add_transit.py           # dry-run mode
-cd calendar-experiments && python add_transit.py --execute # create events
+cd calendar-experiments/calendar-cli-tools && python add_transit.py           # dry-run mode
+cd calendar-experiments/calendar-cli-tools && python add_transit.py --execute # create events
 ```
 Published: [robotic-sean-public](https://github.com/beingSCK/robotic-sean-public)
 
-**Chrome Extension (in progress):**
+**Chrome Extension (calendar-chrome-extension/):**
 ```bash
-cd calendar-experiments/extension
+cd calendar-experiments/calendar-chrome-extension
 bun install
-bun run build && bun run build:background
+bun run build
 # Load unpacked extension from dist/ in Chrome
 ```
-Setup: See `calendar-experiments/extension/CLAUDE.md`
-Branch: `feature/chrome-extension`
+Setup: See `calendar-experiments/calendar-chrome-extension/CLAUDE.md`
 
 ### investment-db-experiments/
 Investment portfolio tracker using SQLite. Goal: Parse emails from Google Takeout, build a RAG pipeline for natural language queries about investments.

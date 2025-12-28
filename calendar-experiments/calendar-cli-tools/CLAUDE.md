@@ -4,15 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Calendar Transit Robot** — A tool to automatically create "transit" calendar events before and after meetings, using real travel time estimates from Google Maps Routes API.
-
-The project started as a Calendar API exploration tool and is evolving into a transit automation script.
+**Calendar Transit Robot CLI** — A Python tool to automatically create "transit" calendar events before and after meetings, using real travel time estimates from Google Maps Routes API.
 
 ## Project Status
 
-- `calendar_explore.py` — Working exploration script (read-only)
-- `transit_calculator.py` — Routes API wrapper (stub mode working)
-- `add_transit.py` — Main orchestrator (dry-run mode working)
+- `add_transit.py` — Main script (dry-run by default, `--execute` to create events)
+- `transit_calculator.py` — Routes API wrapper
+- `calendar_explore.py` — Exploration/testing script (read-only)
 
 See `docs/calendar-robot-plan.md` for the full implementation plan and checklist.
 
@@ -36,9 +34,9 @@ First run opens a browser for OAuth consent. Subsequent runs use the saved `toke
 
 - `credentials.json`: OAuth client credentials (from Google Cloud Console)
 - `token.json`: Cached OAuth tokens (auto-generated after first auth)
-- Current scope: `calendar.readonly` — will need upgrade to `calendar` for write access
+- Scope: `calendar` (read + write)
 
-To re-authenticate (required after scope changes), delete `token.json` and run again.
+To re-authenticate (if needed), delete `token.json` and run again.
 
 ## Key Configuration
 
