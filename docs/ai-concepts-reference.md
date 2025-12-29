@@ -74,4 +74,5 @@ For your current projects, writing it yourself teaches more.
 
 ### Reference Code
 - `chatbot-rebuild/social-manager-agent-unpacked.ts` — What n8n agents look like as traditional code
-- `calendar-experiments/calendar-cli-tools/add_transit.py` — Working calendar automation pipeline
+- `calendar-automaton/src/eventProcessor.ts` — Event processing logic (TypeScript, active development)
+- `archive/calendar-cli-python/add_transit.py` — Original Python proof-of-concept (reference for traffic-aware routing)
