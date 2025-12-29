@@ -187,13 +187,26 @@ async function callRoutesApi(
  * Get travel time between two addresses.
  * Tries TRANSIT first, falls back to DRIVE if transit takes too long or isn't available.
  *
+ * @param origin Starting address
+ * @param destination Ending address
+ * @param forceDrive If true, skip transit and only use driving mode
  * @throws RoutesApiError on API failures (can be caught and handled by caller)
  * @returns RouteResult or null if no route exists
  */
 export async function getTransitTime(
   origin: string,
-  destination: string
+  destination: string,
+  forceDrive: boolean = false
 ): Promise<RouteResult | null> {
+  // If force drive, skip transit entirely
+  if (forceDrive) {
+    const driveResult = await callRoutesApi(origin, destination, 'DRIVE');
+    if (driveResult) {
+      return createRouteResult(driveResult.durationSeconds, driveResult.distanceMeters, 'driving');
+    }
+    return null;
+  }
+
   // Try TRANSIT first
   const transitResult = await callRoutesApi(origin, destination, 'TRANSIT');
 

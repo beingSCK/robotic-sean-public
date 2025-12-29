@@ -10,7 +10,10 @@
     "build:background": "bun build src/background.ts --outdir=dist --target=browser --minify",
     "build:copy": "cp manifest.json dist/ && cp -r icons dist/ && cp popup/popup.html dist/ && cp popup/popup.css dist/",
     "dev": "bun run build",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "test": "bun run src/cli/testRunner.ts",
+    "test:json": "bun run src/cli/testRunner.ts --json",
+    "test:execute": "bun run src/cli/testRunner.ts --execute"
   },
   "devDependencies": {
     "@types/bun": "latest",

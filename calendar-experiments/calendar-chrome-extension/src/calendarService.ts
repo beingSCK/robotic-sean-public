@@ -1,19 +1,25 @@
 /**
  * Calendar Service - Google Calendar API integration
  *
- * Auth is handled by authManager.ts. This module only makes API calls.
+ * Auth is pluggable: Chrome extension uses authManager.ts, CLI uses cliAuth.ts.
+ * Pass a token getter function to each API call.
  */
 
 import type { CalendarEvent, TransitEvent } from './types.ts';
-import { getAccessToken } from './authManager.ts';
 
 const CALENDAR_API_BASE = 'https://www.googleapis.com/calendar/v3';
+
+/** Token getter function type - can be from Chrome auth or CLI auth */
+export type TokenGetter = () => Promise<string>;
 
 /**
  * Fetch upcoming events from the primary calendar.
  */
-export async function fetchEvents(daysForward: number): Promise<CalendarEvent[]> {
-  const token = await getAccessToken();
+export async function fetchEvents(
+  daysForward: number,
+  getToken: TokenGetter
+): Promise<CalendarEvent[]> {
+  const token = await getToken();
 
   const now = new Date();
   const timeMin = now.toISOString();
@@ -49,8 +55,11 @@ export async function fetchEvents(daysForward: number): Promise<CalendarEvent[]>
 /**
  * Insert a transit event into the calendar.
  */
-export async function insertTransitEvent(event: TransitEvent): Promise<CalendarEvent> {
-  const token = await getAccessToken();
+export async function insertTransitEvent(
+  event: TransitEvent,
+  getToken: TokenGetter
+): Promise<CalendarEvent> {
+  const token = await getToken();
 
   const response = await fetch(
     `${CALENDAR_API_BASE}/calendars/primary/events`,
@@ -76,12 +85,15 @@ export async function insertTransitEvent(event: TransitEvent): Promise<CalendarE
  * Insert multiple transit events.
  * Returns the count of successfully created events.
  */
-export async function insertTransitEvents(events: TransitEvent[]): Promise<number> {
+export async function insertTransitEvents(
+  events: TransitEvent[],
+  getToken: TokenGetter
+): Promise<number> {
   let successCount = 0;
 
   for (const event of events) {
     try {
-      await insertTransitEvent(event);
+      await insertTransitEvent(event, getToken);
       successCount++;
     } catch (error) {
       console.error('Failed to insert event:', event.summary, error);

@@ -11,6 +11,7 @@ import {
   onAuthComplete,
   clearAuthCompleteFlag,
   clearAuth,
+  getAccessToken,
 } from '../src/authManager.ts';
 
 // DOM Elements
@@ -177,7 +178,7 @@ async function handleScan() {
     try {
       // This will trigger OAuth via background worker
       // The popup will close during OAuth, so we show a helpful message
-      await fetchEvents(1); // Just trigger auth, don't care about result
+      await fetchEvents(1, getAccessToken); // Just trigger auth, don't care about result
     } catch (error) {
       // This is expected - popup closes during OAuth
       // User will click extension again and oauthJustCompleted will be true
@@ -192,7 +193,7 @@ async function handleScan() {
 
   try {
     console.log('Fetching events...');
-    const events = await fetchEvents(currentSettings.daysForward);
+    const events = await fetchEvents(currentSettings.daysForward, getAccessToken);
     console.log('Fetched events:', events.length);
 
     if (events.length === 0) {
@@ -230,7 +231,7 @@ async function handleCreate() {
   setStatus('Creating transit events...', false, true);
 
   try {
-    const count = await insertTransitEvents(currentTransitEvents);
+    const count = await insertTransitEvents(currentTransitEvents, getAccessToken);
     showSuccess(count);
   } catch (error) {
     console.error('Create error:', error);

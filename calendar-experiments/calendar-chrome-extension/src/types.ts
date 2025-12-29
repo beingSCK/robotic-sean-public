@@ -63,12 +63,16 @@ export interface UserSettings {
   homeAddress: string;
   daysForward: number;
   transitColorId: string;
+  carOnlyLocations?: string[];  // Location patterns that force driving mode
+  homeAirports?: string[];      // Airports that indicate outbound flights (for trip detection)
+  detectTrips?: boolean;        // Whether to enable trip date detection
 }
 
 // Skip reasons - type-safe enum for event filtering
 export enum SkipReason {
   NO_LOCATION = 'no_location',
   ALREADY_TRANSIT_EVENT = 'already_transit_event',
+  HOLD_EVENT = 'hold_event',  // colorId 8 (graphite) = tentative/conditional events
   VIDEO_CALL_CONFERENCE = 'video_call_conference',
   VIDEO_CALL_KEYWORD = 'video_call_keyword',
   OVERNIGHT_EVENT = 'overnight_event',
