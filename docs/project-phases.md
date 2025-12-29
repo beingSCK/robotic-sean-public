@@ -2,7 +2,7 @@
 
 Detailed implementation plans for each project. See `ROADMAP.md` for philosophy and principles.
 
-**Last updated:** 2025-12-27
+**Last updated:** 2025-12-29
 
 ---
 
@@ -122,31 +122,32 @@ The Calendar Transit Tool is useful—but only you can use it. Shipping it as a 
 These items are nice-to-have polish, not blockers for initial publish:
 
 **Tasks to match `add_transit.py` functionality:**
-- [ ] Car-only locations (patterns like "22 Lakeview" → always use driving)
+- [x] Low-transit locations (patterns like "22 Lakeview" → always use driving) *(2025-12-29)*
+- [x] Smart short trips (4-10 min trips include walkability checks) *(2025-12-29)*
+- [x] Hold event skipping (colorId 8) *(2025-12-29)*
+- [x] Overlap detection between transit events *(2025-12-29)*
+- [x] Trip detection (flights, hotel stays) *(2025-12-29)*
+- [ ] Stay events + dynamic home location
 - [ ] Traffic-aware routing (BEST_GUESS + PESSIMISTIC blending)
-- [ ] Trip detection (flights, hotel stays → dynamic home location)
-- [ ] Hold event skipping (colorId 8)
-- [ ] Overlap detection between transit events
+- [ ] Blended traffic models
 
 ### UX Polish (After Publish)
 
 - [ ] Better button copy ("Scan Calendar to Add Transit Events")
 - [ ] Driving preference toggle in settings (always drive vs transit fallback)
-- [ ] Configurable car-only location patterns in settings
+- [ ] Configurable low-transit location patterns in settings UI
 - [ ] Progress indicators during scan
 - [ ] Onboarding flow for first-time users
 
-### Recommended Next Session (After Publish)
+### Recommended Next Session
 
-**Quick wins (30-60 min each):**
-1. **Car-only toggle** — Add a simple checkbox in settings: "Always use driving (no transit)". Easiest feature parity item, immediately useful for your 22 Lakeview case.
-2. **Better button copy** — Change "Scan Calendar" → "Add Transit Events". Small UX win, 5 minutes.
+**Remaining parity features:**
+1. **Stay events + dynamic home** — Port from Python CLI. Uses hotel/airbnb events to determine "home" for that day.
+2. **Traffic-aware routing** — Add departure time to Routes API calls for accurate estimates.
+3. **Blended traffic models** — BEST_GUESS + PESSIMISTIC with 75% pessimistic weight.
 
-**Medium effort (1-2 hours):**
-3. **Car-only location patterns** — Add a text field in settings for comma-separated patterns. Port the matching logic from CLI's `config.json`.
-
-**If feeling ambitious:**
-4. **Architecture review** — Research if `chrome.tabs` API could replace background worker. The current approach works but feels over-engineered.
+**Path to publish:**
+4. **Chrome Web Store** — $5 developer account, store listing, privacy policy.
 
 ### Public Output
 

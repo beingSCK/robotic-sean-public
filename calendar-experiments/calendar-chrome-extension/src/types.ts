@@ -63,7 +63,7 @@ export interface UserSettings {
   homeAddress: string;
   daysForward: number;
   transitColorId: string;
-  carOnlyLocations?: string[];  // Location patterns that force driving mode
+  lowTransitLocations?: string[];  // Location patterns where transit options are limited (force driving)
   homeAirports?: string[];      // Airports that indicate outbound flights (for trip detection)
   detectTrips?: boolean;        // Whether to enable trip date detection
 }

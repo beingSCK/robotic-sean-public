@@ -76,9 +76,10 @@ async function loadSettings(): Promise<UserSettings> {
       settings.homeAddress = config.home_address;
     }
 
-    // Car-only locations
-    if (config.user?.car_only_locations && Array.isArray(config.user.car_only_locations)) {
-      settings.carOnlyLocations = config.user.car_only_locations;
+    // Low-transit locations (check both new and legacy config keys)
+    const lowTransit = config.user?.low_transit_locations || config.user?.car_only_locations;
+    if (lowTransit && Array.isArray(lowTransit)) {
+      settings.lowTransitLocations = lowTransit;
     }
 
     // Home airports (for trip detection)
@@ -226,8 +227,8 @@ async function main() {
     console.log('-'.repeat(40));
     console.log(`Home address: ${settings.homeAddress}`);
     console.log(`Days forward: ${settings.daysForward}`);
-    if (settings.carOnlyLocations && settings.carOnlyLocations.length > 0) {
-      console.log(`Car-only locations: ${settings.carOnlyLocations.join(', ')}`);
+    if (settings.lowTransitLocations && settings.lowTransitLocations.length > 0) {
+      console.log(`Low-transit locations: ${settings.lowTransitLocations.join(', ')}`);
     }
     if (settings.detectTrips) {
       console.log(`Trip detection: enabled`);

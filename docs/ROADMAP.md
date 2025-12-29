@@ -2,7 +2,7 @@
 
 A completion-focused progression anchored to real projects, building towards public visibility.
 
-**Last updated:** 2025-12-27
+**Last updated:** 2025-12-29
 
 ---
 
@@ -33,7 +33,9 @@ This isn't a linear "finish one project, start another" roadmap. It's a curricul
 | Investment Email Processing | Data pipelines | Text extraction, SQLite, document staging | Next |
 | Agent/Chatbot | Agentic patterns | Tool use, RAG, prompt engineering | Later |
 
-**Current focus:** Chrome Extension → Web Store publish → LinkedIn post
+**Current focus:** Chrome Extension feature parity → Web Store publish → LinkedIn post
+
+Recent work (2025-12-29): Added smart short trips feature with walkability checks. Low-transit locations (like Park City) now correctly include short drives that would be skipped in transit-rich areas.
 
 See `project-phases.md` for detailed task lists, conceptual learning notes, and "Definition of Done" for each project.
 

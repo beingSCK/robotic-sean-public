@@ -89,7 +89,7 @@ function selectBestRoute(
 async function callRoutesApi(
   origin: string,
   destination: string,
-  travelMode: 'TRANSIT' | 'DRIVE'
+  travelMode: 'TRANSIT' | 'DRIVE' | 'WALK'
 ): Promise<{ durationSeconds: number; distanceMeters: number } | null> {
   // Validate inputs
   origin = validateAddress(origin, 'Origin');
@@ -231,5 +231,26 @@ export async function getTransitTime(
   }
 
   // No route found at all
+  return null;
+}
+
+/**
+ * Get walking time between two addresses.
+ *
+ * @param origin Starting address
+ * @param destination Ending address
+ * @throws RoutesApiError on API failures
+ * @returns Walking duration in minutes, or null if no walking route exists
+ */
+export async function getWalkingTime(
+  origin: string,
+  destination: string
+): Promise<number | null> {
+  const result = await callRoutesApi(origin, destination, 'WALK');
+
+  if (result) {
+    return toMinutes(result.durationSeconds);
+  }
+
   return null;
 }
