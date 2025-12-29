@@ -348,6 +348,23 @@ function overlapsExistingTransit(
 }
 
 // ============================================================================
+// Logging Helpers
+// ============================================================================
+
+type ProgressCallback = ((message: string) => void) | undefined;
+
+/** Log a skip event with consistent formatting */
+function logSkip(onProgress: ProgressCallback, eventName: string, reason: string): void {
+  onProgress?.(`  Skip "${eventName}": ${reason}`);
+}
+
+/** Log a transit event creation */
+function logCreate(onProgress: ProgressCallback, summary: string, durationMin?: number): void {
+  const suffix = durationMin !== undefined ? ` (${durationMin} min)` : '';
+  onProgress?.(`  Create: ${summary}${suffix}`);
+}
+
+// ============================================================================
 // Main Processing
 // ============================================================================
 
@@ -375,9 +392,19 @@ export async function calculateTransitEvents(
     tripDates = new Set();
   }
 
+  // Get today's date string for skipping past dates
+  // (Past events are still fetched for context like stay detection, but we don't create transit for them)
+  const todayStr = new Date().toISOString().slice(0, 10);
+
   for (const dateStr of sortedDates) {
     const dayEvents = byDay[dateStr];
     if (!dayEvents || dayEvents.length === 0) continue;
+
+    // Skip creating transit for past dates
+    // (Past events are still used for context - e.g., stay detection for dynamic home)
+    if (dateStr < todayStr) {
+      continue; // Silent skip - past dates aren't actionable
+    }
 
     // Skip entire day if it's a trip day
     if (tripDates.has(dateStr)) {
@@ -392,8 +419,10 @@ export async function calculateTransitEvents(
 
     // Process each event in order
     for (const event of dayEvents) {
+      const eventName = event.summary || '(untitled)';
       const skipResult = shouldSkipEvent(event, settings);
       if (skipResult.shouldSkip) {
+        logSkip(onProgress, eventName, skipResult.reason);
         continue; // No location to update for truly skipped events
       }
 
@@ -406,10 +435,9 @@ export async function calculateTransitEvents(
       const eventStart = event.start.dateTime;
       const timeZone = event.start.timeZone || DEFAULT_TIMEZONE;
 
-      // Determine if we should create a transit event
-      let transitEvent: TransitEvent | null = null;
-
-      if (!isSameLocation(location, previousLocation)) {
+      if (isSameLocation(location, previousLocation)) {
+        logSkip(onProgress, eventName, `same location as ${previousLocationName}`);
+      } else {
         try {
           // Check if origin or destination is a car-only location
           const forceDrive =
@@ -418,38 +446,41 @@ export async function calculateTransitEvents(
 
           const transitResult = await getTransitTime(previousLocation, location, forceDrive);
 
-          if (transitResult && isValidTransitDuration(transitResult.durationMinutes).valid) {
-            const eventStartDate = parseDateTime(eventStart);
-            const transitStartTime = new Date(
-              eventStartDate.getTime() - transitResult.durationMinutes * MILLISECONDS_PER_MINUTE
-            );
-
-            // Check for overlap with existing transit events
-            if (overlapsExistingTransit(transitStartTime, eventStartDate, events, settings.transitColorId)) {
-              onProgress?.(`    Skipped: overlaps existing transit`);
+          if (!transitResult) {
+            logSkip(onProgress, eventName, 'no route found');
+          } else {
+            const durationCheck = isValidTransitDuration(transitResult.durationMinutes);
+            if (!durationCheck.valid) {
+              logSkip(onProgress, eventName, `duration ${durationCheck.reason}`);
             } else {
-              transitEvent = createTransitEvent(
-                transitResult,
-                previousLocation,
-                previousLocationName,
-                location,
-                eventStartDate,
-                timeZone,
-                settings.transitColorId
+              const eventStartDate = parseDateTime(eventStart);
+              const transitStartTime = new Date(
+                eventStartDate.getTime() - transitResult.durationMinutes * MILLISECONDS_PER_MINUTE
               );
+
+              // Check for overlap with existing transit events
+              if (overlapsExistingTransit(transitStartTime, eventStartDate, events, settings.transitColorId)) {
+                logSkip(onProgress, eventName, 'overlaps existing transit');
+              } else {
+                const transitEvent = createTransitEvent(
+                  transitResult,
+                  previousLocation,
+                  previousLocationName,
+                  location,
+                  eventStartDate,
+                  timeZone,
+                  settings.transitColorId
+                );
+                transitEvents.push(transitEvent);
+                logCreate(onProgress, transitEvent.summary, transitResult.durationMinutes);
+              }
             }
           }
         } catch (error) {
           if (error instanceof RoutesApiError) {
-            onProgress?.(`  API error for "${event.summary}": ${error.message}`);
+            logSkip(onProgress, eventName, `API error: ${error.message}`);
           }
         }
-      }
-
-      // Add transit event if created
-      if (transitEvent) {
-        transitEvents.push(transitEvent);
-        onProgress?.(`  Created: ${transitEvent.summary}`);
       }
 
       // SINGLE state update at end of loop
@@ -458,12 +489,13 @@ export async function calculateTransitEvents(
     }
 
     // Add return-home transit after last event (if not already home)
-    if (!isSameLocation(previousLocation, settings.homeAddress) && dayEvents.length > 0) {
+    if (!isSameLocation(previousLocation, settings.homeAddress)) {
       const lastEvent = dayEvents.findLast(
         (e) => e.start.dateTime && !shouldSkipEvent(e, settings).shouldSkip
       );
 
       if (lastEvent?.end?.dateTime) {
+        const returnLabel = 'Return home';
         let returnTransit: RouteResult | null;
         try {
           // Check if origin or destination is a car-only location
@@ -474,39 +506,42 @@ export async function calculateTransitEvents(
           returnTransit = await getTransitTime(previousLocation, settings.homeAddress, forceDrive);
         } catch (error) {
           if (error instanceof RoutesApiError) {
-            onProgress?.(`  API error for return home: ${error.message}`);
+            logSkip(onProgress, returnLabel, `API error: ${error.message}`);
           }
           continue; // Continue to next day (we're in the outer date loop here)
         }
 
-        if (
-          returnTransit &&
-          returnTransit.durationMinutes >= MIN_TRANSIT_MINUTES &&
-          returnTransit.durationMinutes <= MAX_TRANSIT_MINUTES
-        ) {
-          const lastEventEnd = parseDateTime(lastEvent.end.dateTime);
-          const returnEndTime = new Date(
-            lastEventEnd.getTime() + returnTransit.durationMinutes * MILLISECONDS_PER_MINUTE
-          );
-
-          // Check for overlap with existing transit events
-          if (overlapsExistingTransit(lastEventEnd, returnEndTime, events, settings.transitColorId)) {
-            onProgress?.(`    Skipped return: overlaps existing transit`);
+        if (!returnTransit) {
+          logSkip(onProgress, returnLabel, 'no route found');
+        } else {
+          const durationCheck = isValidTransitDuration(returnTransit.durationMinutes);
+          if (!durationCheck.valid) {
+            logSkip(onProgress, returnLabel, `duration ${durationCheck.reason}`);
           } else {
-            const timeZone = lastEvent.end.timeZone || DEFAULT_TIMEZONE;
-
-            const returnEvent = createReturnHomeEvent(
-              returnTransit,
-              previousLocation,
-              previousLocationName,
-              settings.homeAddress,
-              lastEventEnd,
-              timeZone,
-              settings.transitColorId
+            const lastEventEnd = parseDateTime(lastEvent.end.dateTime);
+            const returnEndTime = new Date(
+              lastEventEnd.getTime() + returnTransit.durationMinutes * MILLISECONDS_PER_MINUTE
             );
 
-            transitEvents.push(returnEvent);
-            onProgress?.(`  Created return: ${returnEvent.summary} (${returnTransit.durationMinutes} min)`);
+            // Check for overlap with existing transit events
+            if (overlapsExistingTransit(lastEventEnd, returnEndTime, events, settings.transitColorId)) {
+              logSkip(onProgress, returnLabel, 'overlaps existing transit');
+            } else {
+              const timeZone = lastEvent.end.timeZone || DEFAULT_TIMEZONE;
+
+              const returnEvent = createReturnHomeEvent(
+                returnTransit,
+                previousLocation,
+                previousLocationName,
+                settings.homeAddress,
+                lastEventEnd,
+                timeZone,
+                settings.transitColorId
+              );
+
+              transitEvents.push(returnEvent);
+              logCreate(onProgress, returnEvent.summary, returnTransit.durationMinutes);
+            }
           }
         }
       }

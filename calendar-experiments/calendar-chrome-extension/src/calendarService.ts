@@ -31,6 +31,8 @@ export async function fetchEvents(
     singleEvents: 'true',
     orderBy: 'startTime',
     maxResults: '100',
+    // Explicitly request fields we need - colorId is required for overlap detection
+    fields: 'items(id,summary,location,start,end,colorId,conferenceData,description)',
   });
 
   const response = await fetch(
