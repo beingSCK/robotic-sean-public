@@ -1,7 +1,7 @@
 /**
  * CLI Auth - File-based OAuth token management for CLI testing
  *
- * Reads tokens from the Python CLI's token.json file, enabling the test runner
+ * Reads tokens from the archived Python CLI's token.json file, enabling the test runner
  * to use the same authenticated Google account without Chrome extension context.
  */
 
@@ -10,9 +10,9 @@ import { join, dirname } from 'path';
 
 const TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token';
 
-// Path to Python CLI's token.json (relative to this file's location)
-const CLI_TOOLS_DIR = join(dirname(import.meta.path), '../../../calendar-cli-tools');
-const TOKEN_FILE = join(CLI_TOOLS_DIR, 'token.json');
+// Path to archived Python CLI's token.json (relative to this file's location)
+const CLI_ARCHIVE_DIR = join(dirname(import.meta.path), '../../../archive/calendar-cli-python');
+const TOKEN_FILE = join(CLI_ARCHIVE_DIR, 'token.json');
 
 interface PythonTokenData {
   token: string;
@@ -31,8 +31,8 @@ function readTokenFile(): PythonTokenData {
   if (!existsSync(TOKEN_FILE)) {
     throw new Error(
       `Token file not found at ${TOKEN_FILE}\n` +
-      `Please run the Python CLI first to authenticate:\n` +
-      `  cd ../calendar-cli-tools && python add_transit.py`
+      `Please run the archived Python CLI first to authenticate:\n` +
+      `  cd archive/calendar-cli-python && python add_transit.py`
     );
   }
 

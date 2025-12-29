@@ -1,6 +1,6 @@
-# Calendar Transit Extension
+# Calendar Automaton
 
-Chrome extension for the Calendar Transit Robot. Uses Bun for building.
+Chrome extension that automatically creates transit events before/after calendar meetings. Uses Bun for building and testing.
 
 ## First-Time Setup
 
@@ -43,10 +43,18 @@ Chrome extension for the Calendar Transit Robot. Uses Bun for building.
 ## Development Commands
 
 ```bash
-bun install      # Install dependencies
-bun run build    # Build extension to dist/
-bun run clean    # Clean dist folder
+bun install              # Install dependencies
+bun run build            # Build extension to dist/
+bun run clean            # Clean dist folder
+
+# CLI Test Runner (no Chrome reload needed!)
+bun run test             # Dry run with console table
+bun run test --json      # JSON output
+bun run test --execute   # Actually create events
+bun run test --days 14   # Scan 2 weeks ahead
 ```
+
+The CLI test runner uses the same OAuth tokens as the archived Python CLI (reads from `../archive/calendar-cli-python/token.json`).
 
 ## Architecture
 

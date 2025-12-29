@@ -63,9 +63,9 @@ Examples:
 async function loadSettings(): Promise<UserSettings> {
   const settings: UserSettings = { ...DEFAULT_SETTINGS };
 
-  // Try to load settings from Python CLI config
+  // Try to load settings from archived Python CLI config
   try {
-    const configPath = new URL('../../../calendar-cli-tools/config.json', import.meta.url);
+    const configPath = new URL('../../../archive/calendar-cli-python/config.json', import.meta.url);
     const configText = await Bun.file(configPath).text();
     const config = JSON.parse(configText);
 
@@ -218,7 +218,7 @@ async function main() {
 
   if (!settings.homeAddress) {
     console.error('Error: Home address not configured.');
-    console.error('Set it in calendar-cli-tools/config.json or use --home flag.');
+    console.error('Set it in archive/calendar-cli-python/config.json or use --home flag.');
     process.exit(1);
   }
 

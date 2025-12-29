@@ -6,9 +6,9 @@ Detailed implementation plans for each project. See `ROADMAP.md` for philosophy 
 
 ---
 
-## Calendar Transit Tool (CLI) — ✓ COMPLETE
+## Calendar Transit Tool (Python CLI) — ✓ COMPLETE (Proof-of-Concept)
 
-Python script that creates transit events before/after meetings using Google Calendar + Routes APIs.
+Python script that validated the idea of automatically creating transit events. **This was the proof-of-concept; the Chrome Extension is the publishable product.**
 
 ### What Was Built
 
@@ -36,58 +36,25 @@ Python script that creates transit events before/after meetings using Google Cal
 - `python add_transit.py --execute` creates real transit events in Google Calendar
 - Code published to GitHub: [robotic-sean-public](https://github.com/beingSCK/robotic-sean-public)
 
-### Public Output
+### Files (Archived)
 
-**GitHub:**
-- [x] Clean up repo, ensure README explains usage
-- [x] Remove any hardcoded personal details
-- [x] Add MIT license
-- [x] Push to public repo
-
-**LinkedIn post (~200 words):**
-- [ ] Theme: "I built a tool that solves a real problem I had"
-- The pain point (manually adding transit time to calendar)
-- What I built (Python script using Google Calendar + Routes APIs)
-- What I learned (OAuth flows, API integration, phased development)
-- Link to repo
-
-This breaks the seal on "showing work in public" with low stakes—it's a small tool, not a startup pitch.
-
-### Future Enhancement: AI-Assisted Location for Stay Events
-
-**Goal:** Use an AI service to guess the location for Stay events that don't have a location field set.
-
-**Tasks:**
-- [ ] Detect Stay events with no location field
-- [ ] Use event summary/description to infer location (e.g., "STAY: with Yinne" → look up Yinne's address)
-- [ ] Optionally prompt user to confirm/correct inferred location
-
-**Note:** Low priority. For now, ensure Stay events have location fields set manually.
+The Python CLI code is preserved in `archive/calendar-cli-python/` as reference for porting remaining features (traffic-aware routing, blended traffic models) to the TypeScript Extension.
 
 ---
 
-## Calendar Transit Tool (Chrome Extension) — IN PROGRESS
+## Calendar Automaton (Chrome Extension) — **ACTIVE**
 
-Browser extension that does what the CLI does, but accessible to non-technical users.
+Browser extension that automatically creates transit events before/after meetings. This is the publishable product.
 
 ### Why This Phase
 
-The Calendar Transit Tool is useful—but only you can use it. Shipping it as a Chrome extension builds the "ship a product" muscle and teaches browser extension development.
+The CLI was a proof-of-concept—but only you can use it. The Chrome Extension makes the tool accessible to anyone. Shipping it builds the "ship a product" muscle and teaches browser extension development.
 
-### Architecture Decision
+### Architecture
 
-| Option | Pros | Cons | Skills Learned |
-|--------|------|------|----------------|
-| **TypeScript rewrite** | Pure client-side, no hosting | More rewrite work | TS, browser APIs |
-| **Python API backend** | Reuses existing code | Needs hosting | **Cloud VMs, Docker, deployment** |
+Pure TypeScript/client-side. No backend needed. OAuth handled via `chrome.identity.launchWebAuthFlow()`.
 
-**Current path:** TypeScript (pure client-side). The Python backend path remains an option if the current architecture proves unsatisfactory—it would teach cloud deployment skills.
-
-**If Python backend (future option):**
-- [ ] Wrap in FastAPI
-- [ ] Dockerize
-- [ ] Deploy to cloud VM (DigitalOcean, Fly.io, Railway, etc.)
-- [ ] Set up domain/HTTPS
+**Key insight:** The CLI test runner (`bun run test`) enables fast iteration without Chrome reload cycles. This makes the TypeScript codebase fully testable and maintainable.
 
 ### MVP Status: ✓ DONE (2025-12-27)
 
@@ -156,8 +123,8 @@ These items are nice-to-have polish, not blockers for initial publish:
 - (Optional) Blog post on the journey from script → product
 
 ### Files
-- `calendar-experiments/calendar-chrome-extension/` — Extension source code
-- `calendar-experiments/calendar-chrome-extension/CLAUDE.md` — Setup instructions
+- `calendar-automaton/` — Extension source code
+- `calendar-automaton/CLAUDE.md` — Setup instructions
 
 ---
 

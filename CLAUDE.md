@@ -13,35 +13,34 @@ See:
 - `docs/project-phases.md` - Detailed task lists for each project
 - `docs/ai-concepts-reference.md` - Conceptual explanations and resources
 
-## Current Status (2025-12-27)
+## Current Status (2025-12-29)
 
-| Project | Status | Branch |
-|---------|--------|--------|
-| Calendar Transit CLI | ✓ Complete | `main` |
-| Calendar Transit Extension | **Active** - MVP done, publishing next | `feature/chrome-extension` |
-| Investment Email Processing | Next | — |
-| Agent/Chatbot | Later | — |
+| Project | Status | Location |
+|---------|--------|----------|
+| Calendar Automaton | **Active** - feature parity, then publish | `calendar-automaton/` |
+| Calendar Transit CLI | ✓ Complete (proof-of-concept) | `archive/calendar-cli-python/` |
+| Investment Email Processing | Next | `investment-db-experiments/` |
+| Agent/Chatbot | Later | `chatbot-rebuild/` |
 
 ## Current Projects
 
-### calendar-experiments/
-Calendar Transit Robot — automatically creates "transit" events before/after meetings using Google Maps Routes API.
+### calendar-automaton/
+Calendar Automaton — Chrome extension that automatically creates transit events before/after meetings using Google Calendar + Routes APIs.
 
-**CLI (calendar-cli-tools/):**
 ```bash
-cd calendar-experiments/calendar-cli-tools && python add_transit.py           # dry-run mode
-cd calendar-experiments/calendar-cli-tools && python add_transit.py --execute # create events
-```
-Published: [robotic-sean-public](https://github.com/beingSCK/robotic-sean-public)
-
-**Chrome Extension (calendar-chrome-extension/):**
-```bash
-cd calendar-experiments/calendar-chrome-extension
+cd calendar-automaton
 bun install
-bun run build
+bun run build      # Build extension
+bun run test       # Test event processing (CLI mode)
+bun run test --execute  # Actually create events
 # Load unpacked extension from dist/ in Chrome
 ```
-Setup: See `calendar-experiments/calendar-chrome-extension/CLAUDE.md`
+Setup: See `calendar-automaton/CLAUDE.md`
+
+### archive/calendar-cli-python/
+The original Python CLI proof-of-concept. Kept as reference for porting remaining features (traffic-aware routing, blended traffic models).
+
+Published: [robotic-sean-public](https://github.com/beingSCK/robotic-sean-public)
 
 ### investment-db-experiments/
 Investment portfolio tracker using SQLite. Goal: Parse emails from Google Takeout, build a RAG pipeline for natural language queries about investments.
