@@ -3,8 +3,14 @@
  * Ported from transit_calculator.py (simplified for MVP)
  */
 
-import { ROUTES_API_KEY, TRANSIT_FALLBACK_THRESHOLD } from './config.ts';
+import {
+  ROUTES_API_KEY,
+  TRANSIT_FALLBACK_THRESHOLD,
+  ROUTES_API_TIMEOUT_MS,
+} from './config.ts';
+import { RoutesApiError } from './types.ts';
 import type { RouteResult } from './types.ts';
+import { parseDurationSeconds, toMinutes, validateAddress } from './utils.ts';
 
 const ROUTES_API_ENDPOINT = 'https://routes.googleapis.com/directions/v2:computeRoutes';
 
@@ -19,13 +25,76 @@ interface RoutesApiResponse {
 }
 
 /**
+ * Create a RouteResult object from raw API data.
+ * Eliminates repeated object construction.
+ */
+function createRouteResult(
+  durationSeconds: number,
+  distanceMeters: number,
+  mode: 'transit' | 'driving'
+): RouteResult {
+  return {
+    durationMinutes: toMinutes(durationSeconds),
+    distanceMeters,
+    mode,
+  };
+}
+
+/**
+ * Select the best route based on transit vs driving comparison.
+ * Returns null only if both routes are null.
+ */
+function selectBestRoute(
+  transitResult: { durationSeconds: number; distanceMeters: number } | null,
+  driveResult: { durationSeconds: number; distanceMeters: number } | null
+): RouteResult | null {
+  // No routes available at all
+  if (!transitResult && !driveResult) {
+    return null;
+  }
+
+  // Only driving available
+  if (!transitResult && driveResult) {
+    return createRouteResult(driveResult.durationSeconds, driveResult.distanceMeters, 'driving');
+  }
+
+  // Only transit available (shouldn't happen if we got here, but for type safety)
+  if (transitResult && !driveResult) {
+    return createRouteResult(transitResult.durationSeconds, transitResult.distanceMeters, 'transit');
+  }
+
+  // Both available - compare
+  const transitMinutes = toMinutes(transitResult!.durationSeconds);
+  const driveMinutes = toMinutes(driveResult!.durationSeconds);
+
+  // If transit is reasonable, prefer it
+  if (transitMinutes <= TRANSIT_FALLBACK_THRESHOLD) {
+    return createRouteResult(transitResult!.durationSeconds, transitResult!.distanceMeters, 'transit');
+  }
+
+  // Transit is slow - use whichever is faster
+  if (driveMinutes < transitMinutes) {
+    return createRouteResult(driveResult!.durationSeconds, driveResult!.distanceMeters, 'driving');
+  }
+
+  // Transit is still faster or equal, use transit
+  return createRouteResult(transitResult!.durationSeconds, transitResult!.distanceMeters, 'transit');
+}
+
+/**
  * Call Google Routes API to get travel time.
+ * Throws RoutesApiError on API failures.
+ * Returns null if no valid route exists (different from API failure).
  */
 async function callRoutesApi(
   origin: string,
   destination: string,
   travelMode: 'TRANSIT' | 'DRIVE'
 ): Promise<{ durationSeconds: number; distanceMeters: number } | null> {
+  // Validate inputs
+  origin = validateAddress(origin, 'Origin');
+  destination = validateAddress(destination, 'Destination');
+
   const headers = {
     'Content-Type': 'application/json',
     'X-Goog-Api-Key': ROUTES_API_KEY,
@@ -38,42 +107,88 @@ async function callRoutesApi(
     travelMode: travelMode,
   };
 
+  const context = { origin, destination, travelMode };
+
+  // Set up timeout
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), ROUTES_API_TIMEOUT_MS);
+
   try {
     const response = await fetch(ROUTES_API_ENDPOINT, {
       method: 'POST',
       headers,
       body: JSON.stringify(body),
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const data = await response.json() as RoutesApiResponse;
-      console.error(`Routes API error (${response.status}):`, data.error?.message);
-      return null;
+      const isTransient = response.status >= 500;
+      throw new RoutesApiError(
+        `Routes API error (${response.status}): ${data.error?.message || 'Unknown error'}`,
+        response.status,
+        isTransient,
+        context
+      );
     }
 
     const data = await response.json() as RoutesApiResponse;
 
+    // No routes found - this is valid "no route" result, not an error
     if (!data.routes || data.routes.length === 0) {
       return null;
     }
 
     const route = data.routes[0];
-    const durationStr = route?.duration || '0s';
-    const durationSeconds = parseInt(durationStr.replace('s', ''), 10);
+    const durationStr = route?.duration;
+
+    // If duration is missing, treat as no valid route
+    if (!durationStr) {
+      return null;
+    }
+
+    const durationSeconds = parseDurationSeconds(durationStr);
 
     return {
       durationSeconds,
       distanceMeters: route?.distanceMeters || 0,
     };
   } catch (error) {
-    console.error('Routes API fetch error:', error);
-    return null;
+    clearTimeout(timeoutId);
+
+    // Re-throw RoutesApiError as-is
+    if (error instanceof RoutesApiError) {
+      throw error;
+    }
+
+    // Handle abort (timeout)
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new RoutesApiError(
+        `Routes API request timed out after ${ROUTES_API_TIMEOUT_MS}ms`,
+        0,
+        true, // Timeouts are transient
+        context
+      );
+    }
+
+    // Network errors are transient
+    throw new RoutesApiError(
+      `Routes API network error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      0,
+      true,
+      context
+    );
   }
 }
 
 /**
  * Get travel time between two addresses.
  * Tries TRANSIT first, falls back to DRIVE if transit takes too long or isn't available.
+ *
+ * @throws RoutesApiError on API failures (can be caught and handled by caller)
+ * @returns RouteResult or null if no route exists
  */
 export async function getTransitTime(
   origin: string,
@@ -82,48 +197,24 @@ export async function getTransitTime(
   // Try TRANSIT first
   const transitResult = await callRoutesApi(origin, destination, 'TRANSIT');
 
+  // If transit is available and reasonable, return it immediately
   if (transitResult) {
-    const transitMinutes = Math.ceil(transitResult.durationSeconds / 60);
+    const transitMinutes = toMinutes(transitResult.durationSeconds);
 
-    // If transit is reasonable (< threshold), use it
     if (transitMinutes <= TRANSIT_FALLBACK_THRESHOLD) {
-      return {
-        durationMinutes: transitMinutes,
-        distanceMeters: transitResult.distanceMeters,
-        mode: 'transit',
-      };
+      return createRouteResult(transitResult.durationSeconds, transitResult.distanceMeters, 'transit');
     }
 
-    // Transit takes too long, try driving
+    // Transit takes too long, try driving to compare
     const driveResult = await callRoutesApi(origin, destination, 'DRIVE');
-    if (driveResult) {
-      const driveMinutes = Math.ceil(driveResult.durationSeconds / 60);
-      // Use whichever is faster
-      if (driveMinutes < transitMinutes) {
-        return {
-          durationMinutes: driveMinutes,
-          distanceMeters: driveResult.distanceMeters,
-          mode: 'driving',
-        };
-      }
-    }
-
-    // Driving isn't faster, use transit
-    return {
-      durationMinutes: transitMinutes,
-      distanceMeters: transitResult.distanceMeters,
-      mode: 'transit',
-    };
+    return selectBestRoute(transitResult, driveResult);
   }
 
   // No transit route, try driving
   const driveResult = await callRoutesApi(origin, destination, 'DRIVE');
+
   if (driveResult) {
-    return {
-      durationMinutes: Math.ceil(driveResult.durationSeconds / 60),
-      distanceMeters: driveResult.distanceMeters,
-      mode: 'driving',
-    };
+    return createRouteResult(driveResult.durationSeconds, driveResult.distanceMeters, 'driving');
   }
 
   // No route found at all

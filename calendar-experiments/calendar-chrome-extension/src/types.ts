@@ -65,10 +65,33 @@ export interface UserSettings {
   transitColorId: string;
 }
 
+// Skip reasons - type-safe enum for event filtering
+export enum SkipReason {
+  NO_LOCATION = 'no_location',
+  ALREADY_TRANSIT_EVENT = 'already_transit_event',
+  VIDEO_CALL_CONFERENCE = 'video_call_conference',
+  VIDEO_CALL_KEYWORD = 'video_call_keyword',
+  OVERNIGHT_EVENT = 'overnight_event',
+  ALL_DAY_EVENT = 'all_day_event',
+}
+
 // Skip result for event filtering
 export interface SkipResult {
   shouldSkip: boolean;
-  reason: string;
+  reason: SkipReason | '';
+}
+
+// Routes API error with context for debugging
+export class RoutesApiError extends Error {
+  constructor(
+    message: string,
+    public statusCode: number,
+    public isTransient: boolean,
+    public context?: { origin?: string; destination?: string; travelMode?: string }
+  ) {
+    super(message);
+    this.name = 'RoutesApiError';
+  }
 }
 
 // Events grouped by date

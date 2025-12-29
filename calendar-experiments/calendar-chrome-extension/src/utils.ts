@@ -2,7 +2,7 @@
  * Utility functions for Calendar Transit Extension
  */
 
-import { DEFAULT_TIMEZONE } from './config.ts';
+import { DEFAULT_TIMEZONE, SECONDS_PER_MINUTE } from './config.ts';
 
 /**
  * Parse an ISO 8601 datetime string to a Date object.
@@ -15,6 +15,10 @@ export function parseDateTime(dateTimeStr: string): Date {
 /**
  * Format a Date as ISO 8601 datetime string for Google Calendar API.
  * Example: 2025-01-15T09:00:00-05:00
+ *
+ * TODO: The timeZone parameter is currently ignored. This uses the local
+ * machine's timezone offset. For proper timezone support, consider using
+ * a library like date-fns-tz or Temporal API when it stabilizes.
  */
 export function formatDateTime(date: Date, timeZone: string = DEFAULT_TIMEZONE): string {
   // Get ISO string and handle timezone
@@ -73,4 +77,47 @@ export function getHourFromDateTime(dateTimeStr: string): number | null {
  */
 export function isSameLocation(loc1: string, loc2: string): boolean {
   return loc1.toLowerCase().trim() === loc2.toLowerCase().trim();
+}
+
+/**
+ * Parse a duration string from Routes API (e.g., "1800s") to seconds.
+ * Throws if the format is invalid.
+ */
+export function parseDurationSeconds(durationStr: string): number {
+  const match = durationStr.match(/^(\d+)s$/);
+  if (!match) {
+    throw new Error(`Invalid duration format: ${durationStr}`);
+  }
+  return parseInt(match[1], 10);
+}
+
+/**
+ * Convert seconds to minutes, rounding up.
+ */
+export function toMinutes(seconds: number): number {
+  return Math.ceil(seconds / SECONDS_PER_MINUTE);
+}
+
+/**
+ * Extract the date string (YYYY-MM-DD) from an ISO datetime string.
+ * More robust than substring(0, 10) - validates the format.
+ */
+export function extractDateString(dateTimeStr: string): string {
+  const match = dateTimeStr.match(/^\d{4}-\d{2}-\d{2}/);
+  if (!match) {
+    throw new Error(`Invalid date format: ${dateTimeStr}`);
+  }
+  return match[0];
+}
+
+/**
+ * Validate and trim an address string.
+ * Throws if the address is empty after trimming.
+ */
+export function validateAddress(address: string, fieldName: string): string {
+  const trimmed = address.trim();
+  if (!trimmed) {
+    throw new Error(`${fieldName} address cannot be empty`);
+  }
+  return trimmed;
 }
