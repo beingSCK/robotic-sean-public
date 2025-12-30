@@ -58,6 +58,19 @@ Learning project to understand agent patterns by rebuilding a chatbot from scrat
 
 **Commit messages:** Short subject line (~50 chars), optional body for context when helpful. Do NOT include "Co-Authored-By" or other AI attribution in commit messages.
 
+**Writing style:** Avoid em dashes (—). They signal "AI slop" to readers. Use hyphens (-), semicolons, or restructure sentences instead.
+
+**TODO/DRAFT markers:** Use consistently across code and prose files:
+- `TODO:` - Something that needs to be done
+- `FIXME:` - Something broken that needs fixing
+- `DRAFT:` - AI-generated content needing human review
+
+In code files, use standard comments (`// TODO:`). In markdown files, use a visible blockquote at the top:
+```markdown
+> **DRAFT:** Claude wrote this. Sean hasn't validated the premises here.
+```
+This keeps drafts visible to readers now; we can convert to HTML comments later via script when finalized.
+
 **Work journal:** At the end of each session, update `work-journal/YYYY-MM-DD.md` with completed tasks, decisions made, things learned, and next steps. This folder is gitignored.
 
 ## Architecture Notes
