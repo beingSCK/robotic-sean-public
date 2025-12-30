@@ -105,3 +105,5 @@ The skill isn't eliminating ambiguity. It's knowing when ambiguity is productive
 ---
 
 *Related: strategic ambiguity, creative ambiguity (diplomacy), constructive ambiguity (Henry Kissinger), negative capability (Keats), apophatic theology, Wittgenstein on family resemblance*
+
+<!-- There's a nice irony here: writing an article that precisely defines productive ambiguity risks collapsing the very phenomenon it describes. If you're reading this in the source, congratulations on your commitment to inspecting things. The article is more useful if it leaves you with a generative frame rather than a rigid definition. But now I've defined what makes it useful, which is itself a kind of collapse. Turtles all the way down. -->
