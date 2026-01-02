@@ -1,12 +1,12 @@
-# Project Phases: Detailed Task Lists
+# Calendar Project Phases: Detailed Implementation Notes
 
-Detailed implementation plans for each project. See `ROADMAP.md` for philosophy and principles.
+Detailed implementation notes for the Calendar Automaton family. See `ROADMAP.md` for status and next steps.
 
-**Last updated:** 2025-12-29
+**Last updated:** 2026-01-02
 
 ---
 
-## Calendar Transit Tool (Python CLI) — ✓ COMPLETE (Proof-of-Concept)
+## Calendar CLI (Python) - COMPLETE (Proof-of-Concept)
 
 Python script that validated the idea of automatically creating transit events. **This was the proof-of-concept; the Chrome Extension is the publishable product.**
 
@@ -31,7 +31,7 @@ Python script that validated the idea of automatically creating transit events. 
 - Traffic-aware routing with the Routes API
 - Conservative estimation strategies (blending pessimistic/optimistic)
 
-**Definition of Done:** ✓ Met
+**Definition of Done:** Met
 - `python add_transit.py` shows accurate travel times from Google Routes API
 - `python add_transit.py --execute` creates real transit events in Google Calendar
 - Code published to GitHub: [robotic-sean-public](https://github.com/beingSCK/robotic-sean-public)
@@ -42,13 +42,13 @@ The Python CLI code is preserved in `archive/calendar-cli-python/` as reference 
 
 ---
 
-## Calendar Automaton (Chrome Extension) — **ACTIVE**
+## Calendar Automaton (Chrome Extension) - ACTIVE
 
 Browser extension that automatically creates transit events before/after meetings. This is the publishable product.
 
 ### Why This Phase
 
-The CLI was a proof-of-concept—but only you can use it. The Chrome Extension makes the tool accessible to anyone. Shipping it builds the "ship a product" muscle and teaches browser extension development.
+The CLI was a proof-of-concept - but only you can use it. The Chrome Extension makes the tool accessible to anyone. Shipping it builds the "ship a product" muscle and teaches browser extension development.
 
 ### Architecture
 
@@ -56,7 +56,7 @@ Pure TypeScript/client-side. No backend needed. OAuth handled via `chrome.identi
 
 **Key insight:** The CLI test runner (`bun run test`) enables fast iteration without Chrome reload cycles. This makes the TypeScript codebase fully testable and maintainable.
 
-### MVP Status: ✓ DONE (2025-12-27)
+### MVP Status: DONE (2025-12-27)
 
 **What was built:**
 - [x] Extension manifest v3 setup with Bun bundler
@@ -64,32 +64,24 @@ Pure TypeScript/client-side. No backend needed. OAuth handled via `chrome.identi
 - [x] Background service worker for OAuth (persists when popup closes)
 - [x] Calendar API integration (fetch events, insert transit events)
 - [x] Routes API integration (transit times with driving fallback)
-- [x] Popup UI with scan → preview → create flow
+- [x] Popup UI with scan to preview to create flow
 - [x] Basic filtering (skip video calls, all-day, existing transit)
 - [x] Credential rotation and git history rewrite for security
 
 **Conceptual learning:**
 - Chrome extension architecture (manifest v3, service workers)
-- OAuth in browser extensions (popup closes during auth → need background worker)
+- OAuth in browser extensions (popup closes during auth, need background worker)
 - Product thinking: What's the simplest UX that works?
 - Git history rewriting (`git filter-branch`) for removing secrets
 
 **Key technical decision:** OAuth in browser extensions is tricky because the popup closes when user clicks the OAuth window. Solution: background service worker handles OAuth, stores tokens, sets a flag. When popup reopens, it checks for `oauthJustCompleted` and auto-scans.
-
-### Next Steps (Path to Publish)
-
-1. **Family testing** — Have family members install and use it
-2. **Chrome Web Store** — $5 developer account, store listing, privacy policy, submit for review
-3. **LinkedIn post** — "I shipped my first Chrome extension"
-
-**Definition of Done:** Extension live on Chrome Web Store, at least 1 external user.
 
 ### Feature Parity with CLI (After Publish)
 
 These items are nice-to-have polish, not blockers for initial publish:
 
 **Tasks to match `add_transit.py` functionality:**
-- [x] Low-transit locations (patterns like "22 Lakeview" → always use driving) *(2025-12-29)*
+- [x] Low-transit locations (patterns like "22 Lakeview" always use driving) *(2025-12-29)*
 - [x] Smart short trips (4-10 min trips include walkability checks) *(2025-12-29)*
 - [x] Hold event skipping (colorId 8) *(2025-12-29)*
 - [x] Overlap detection between transit events *(2025-12-29)*
@@ -98,155 +90,14 @@ These items are nice-to-have polish, not blockers for initial publish:
 - [ ] Traffic-aware routing (BEST_GUESS + PESSIMISTIC blending)
 - [ ] Blended traffic models
 
-### UX Polish (After Publish)
-
-- [ ] Better button copy ("Scan Calendar to Add Transit Events")
-- [ ] Driving preference toggle in settings (always drive vs transit fallback)
-- [ ] Configurable low-transit location patterns in settings UI
-- [ ] Progress indicators during scan
-- [ ] Onboarding flow for first-time users
-
-### Recommended Next Session
-
-**Remaining parity features:**
-1. **Stay events + dynamic home** — Port from Python CLI. Uses hotel/airbnb events to determine "home" for that day.
-2. **Traffic-aware routing** — Add departure time to Routes API calls for accurate estimates.
-3. **Blended traffic models** — BEST_GUESS + PESSIMISTIC with 75% pessimistic weight.
-
-**Path to publish:**
-4. **Chrome Web Store** — $5 developer account, store listing, privacy policy.
-
-### Public Output
-
-- Chrome Web Store listing
-- LinkedIn post: "I shipped my first Chrome extension"
-- (Optional) Blog post on the journey from script → product
-
 ### Files
-- `calendar-automaton/` — Extension source code
-- `calendar-automaton/CLAUDE.md` — Setup instructions
-
----
-
-## Investment Email Processing — NEXT
-
-Parse investment-related emails from Google Takeout and build a queryable database.
-
-### Why This Project
-
-You have 30GB of real data (Google Takeout emails) and a real use case (tax prep, portfolio tracking). This is where the "AI agent" roadmap becomes practical.
-
-### Step 1: Email Extraction Pipeline
-
-**Tasks:**
-- Parse mbox format from Google Takeout
-- Filter to investment-related emails (sender patterns, subject keywords)
-- Extract metadata: date, sender, subject, body text
-- Store in SQLite `documents` table (schema already exists)
-
-**Conceptual learning:**
-- Working with messy real-world data
-- Text extraction and cleaning
-- The "staging table" pattern for document processing
-
-**Definition of Done:** Investment-related emails loaded into `documents` table with `needs_review = 1`.
-
-### Step 2: Classification and Chunking
-
-**Tasks:**
-- Build classifier for document types (capital call, distribution, K-1, etc.)
-- Implement chunking strategy for long emails
-- Add entity/investment linking (which entity received this?)
-
-**Conceptual learning:**
-- Document classification (rule-based first, then consider LLM-assisted)
-- Chunking strategies for RAG (why size matters, overlap considerations)
-- The value of human-in-the-loop review
-
-**Definition of Done:** Documents classified and chunked, ready for embedding.
-
-### Step 3: RAG Pipeline
-
-**Tasks:**
-- Generate embeddings (OpenAI embeddings API or local alternative)
-- Store in vector database (Chroma for local, simple setup)
-- Build query interface: "What distributions did I receive from X in 2024?"
-- Test retrieval quality
-
-**Conceptual learning:**
-- **Embeddings:** Text → numbers that capture meaning
-- **Vector search:** Finding similar documents by meaning, not keywords
-- **RAG pattern:** Retrieve relevant context → stuff into prompt → generate answer
-
-**Definition of Done:** Natural language queries return relevant documents from your investment emails.
-
-### Public Output: Blog Post
-
-This project is meatier and deserves a longer writeup:
-- Problem: Tracking private market investments across entities
-- Architecture: Email → SQLite → Vector DB → Query interface
-- Lessons: What worked, what was harder than expected
-- Code snippets and architecture diagrams
-
-**Where to publish:** Your own blog (if you have one), or a LinkedIn article, or dev.to/Medium.
-
----
-
-## Agent Wrapper / Chatbot — LATER
-
-Learn agent patterns by rebuilding a chatbot from scratch, then apply to investment queries.
-
-### Why This Phase
-
-Once RAG is working, wrapping it in an "agent" is relatively straightforward. The reference material in `chatbot-rebuild/` shows the pattern—now we build our own to truly understand it.
-
-### Step 1: Basic Agent Loop
-
-**Tasks:**
-- Build the agentic while-loop (reference: `chatbot-rebuild/social-manager-agent-unpacked.ts` lines 314-347)
-- Define tools: `search_investments(query)`, `get_transactions(investment_id)`, `summarize_document(doc_id)`
-- Connect to Claude or GPT-4 via API
-- Handle tool calls and responses
-
-**Conceptual learning:**
-- The agentic loop pattern (reference material in `chatbot-rebuild/`)
-- Tool definition and parameter design
-- Prompt engineering for reliable tool use
-
-**Definition of Done:** Ask "What's my total exposure to Fund X?" and get a coherent answer with cited sources.
-
-### Step 2: Memory and Session Management
-
-**Tasks:**
-- Add conversation memory (sliding window pattern from reference)
-- Session persistence (save/resume conversations)
-- Export conversation summaries
-
-**Definition of Done:** Multi-turn conversations work naturally, context persists across questions.
-
-### Public Output: GitHub + Demo Video
-
-- **GitHub:** Investment tracker as open-source tool
-- **Demo video (optional):** 2-minute Loom showing natural language queries
-- **LinkedIn:** Post about building your first AI agent with real use case
-
----
-
-## Notes on Tooling Evolution
-
-As projects grow in complexity (Chrome extensions, full-stack apps), consider upgrading development tools:
-
-| Tool | Best For | When to Use |
-|------|----------|-------------|
-| **Claude Code CLI** | Scripts, single-file tools, quick iterations | Calendar CLI, Investment DB |
-| **Cursor / AI IDE** | Multi-file projects, TypeScript, debugging | Chrome extension, larger apps |
-
-**Don't upgrade prematurely**—the current tools work fine for simple projects. But multi-file TypeScript projects may benefit from Cursor or similar AI-assisted IDEs.
-
-The goal isn't to use the fanciest tools. It's to use the simplest tools that get the job done, and upgrade when the complexity genuinely warrants it.
+- `calendar-automaton/` - Extension source code
+- `calendar-automaton/CLAUDE.md` - Setup instructions
 
 ---
 
 ## Historical Note
 
-The original planning used "LP1/LP2/LP3/LP4" numbering which became confusing when execution order diverged from plan order. This document was restructured on 2025-12-27 to match actual execution sequence: CLI → Extension → Investment → Chatbot.
+The original planning used "LP1/LP2/LP3/LP4" numbering which became confusing when execution order diverged from plan order. This document was restructured on 2025-12-27 to match actual execution sequence: CLI to Extension.
+
+For future projects (Investment DB, Chatbot), see `../../_meta/docs/incubating.md`.

@@ -1,6 +1,6 @@
 # Calendar Automaton
 
-Chrome extension that automatically creates transit events before/after calendar meetings. Uses Bun for building and testing.
+Chrome extension for intelligent calendar management. Currently creates transit events automatically; designed to expand to prep time, buffer events, and other derived calendar entries. Uses Bun for building and testing.
 
 ## First-Time Setup
 
