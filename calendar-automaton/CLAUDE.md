@@ -54,7 +54,7 @@ bun run test --execute   # Actually create events
 bun run test --days 14   # Scan 2 weeks ahead
 ```
 
-The CLI test runner uses the same OAuth tokens as the archived Python CLI (reads from `../archive/calendar-cli-python/token.json`).
+The CLI test runner uses the same OAuth tokens as the archived Python CLI (reads from `../../_past-projects/2025-calendar-cli/token.json`).
 
 ## Architecture
 

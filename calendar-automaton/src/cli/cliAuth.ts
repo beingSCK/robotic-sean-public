@@ -11,7 +11,7 @@ import { join, dirname } from 'path';
 const TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token';
 
 // Path to archived Python CLI's token.json (relative to this file's location)
-const CLI_ARCHIVE_DIR = join(dirname(import.meta.path), '../../../archive/calendar-cli-python');
+const CLI_ARCHIVE_DIR = join(dirname(import.meta.path), '../../../../_past-projects/2025-calendar-cli');
 const TOKEN_FILE = join(CLI_ARCHIVE_DIR, 'token.json');
 
 interface PythonTokenData {
@@ -32,7 +32,7 @@ function readTokenFile(): PythonTokenData {
     throw new Error(
       `Token file not found at ${TOKEN_FILE}\n` +
       `Please run the archived Python CLI first to authenticate:\n` +
-      `  cd archive/calendar-cli-python && python add_transit.py`
+      `  cd _past-projects/2025-calendar-cli && python add_transit.py`
     );
   }
 

@@ -12,14 +12,13 @@ See:
 - `docs/ROADMAP.md` - Calendar project status and next steps
 - `docs/project-phases.md` - Detailed implementation notes
 - `../_meta/docs/FOUNDATIONS.md` - Overall philosophy, principles, and conventions
-- `../_meta/docs/incubating.md` - Future projects queue
+- `../_future-projects/incubating.md` - Future projects queue
 
-## Current Status (2026-01-02)
+## Current Status (2026-01-07)
 
 | Project | Status | Location |
 |---------|--------|----------|
 | Calendar Automaton | **Active** - feature parity, then publish | `calendar-automaton/` |
-| Calendar CLI | Complete (proof-of-concept) | `archive/calendar-cli-python/` |
 
 ## Projects
 
@@ -36,7 +35,8 @@ bun run test --execute  # Actually create events
 ```
 Setup: See `calendar-automaton/CLAUDE.md`
 
-### archive/calendar-cli-python/
-The original Python CLI proof-of-concept. Kept as reference for porting remaining features (traffic-aware routing, blended traffic models).
+## Related (Archived)
+
+The original Python CLI proof-of-concept has moved to `../_past-projects/2025-calendar-cli/`. It's kept as reference for porting remaining features (traffic-aware routing, blended traffic models).
 
 Published: [robotic-sean-public](https://github.com/beingSCK/robotic-sean-public)
