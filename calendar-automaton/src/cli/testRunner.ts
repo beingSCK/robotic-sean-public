@@ -12,23 +12,23 @@
  *   bun run test --days 14    # Scan 14 days forward
  */
 
-import { parseArgs } from 'util';
-import { getAccessToken } from './cliAuth.ts';
-import { fetchEvents, insertTransitEvents } from '../calendarService.ts';
-import { calculateTransitEvents } from '../eventProcessor.ts';
-import type { UserSettings, TransitEvent, CalendarEvent } from '../types.ts';
-import { DEFAULT_SETTINGS } from '../config.ts';
+import { parseArgs } from "node:util";
+import { fetchEvents, insertTransitEvents } from "../calendarService.ts";
+import { DEFAULT_SETTINGS } from "../config.ts";
+import { calculateTransitEvents } from "../eventProcessor.ts";
+import type { CalendarEvent, TransitEvent, UserSettings } from "../types.ts";
+import { getAccessToken } from "./cliAuth.ts";
 
 // Parse command line arguments
 const { values } = parseArgs({
   args: Bun.argv.slice(2),
   options: {
-    json: { type: 'boolean', default: false },
-    execute: { type: 'boolean', default: false },
-    days: { type: 'string', default: '7' },
-    home: { type: 'string' },
-    'detect-trips': { type: 'boolean', default: false },
-    help: { type: 'boolean', short: 'h', default: false },
+    json: { type: "boolean", default: false },
+    execute: { type: "boolean", default: false },
+    days: { type: "string", default: "7" },
+    home: { type: "string" },
+    "detect-trips": { type: "boolean", default: false },
+    help: { type: "boolean", short: "h", default: false },
   },
   strict: true,
   allowPositionals: false,
@@ -65,7 +65,10 @@ async function loadSettings(): Promise<UserSettings> {
 
   // Try to load settings from archived Python CLI config
   try {
-    const configPath = new URL('../../../../_past-projects/2025-calendar-cli/config.json', import.meta.url);
+    const configPath = new URL(
+      "../../../../_past-projects/2025-calendar-cli/config.json",
+      import.meta.url,
+    );
     const configText = await Bun.file(configPath).text();
     const config = JSON.parse(configText);
 
@@ -95,10 +98,10 @@ async function loadSettings(): Promise<UserSettings> {
     settings.homeAddress = values.home;
   }
 
-  settings.daysForward = parseInt(values.days || '7', 10);
+  settings.daysForward = Number.parseInt(values.days || "7", 10);
 
   // Enable trip detection if --detect-trips flag is passed
-  if (values['detect-trips']) {
+  if (values["detect-trips"]) {
     settings.detectTrips = true;
   }
 
@@ -121,17 +124,17 @@ function formatEventForTable(event: TransitEvent): {
   // Extract route from summary (e.g., "TRANSIT: Home → Destination")
   const routeMatch = event.summary.match(/^(TRANSIT|DRIVE): (.+)$/);
   const route = routeMatch ? routeMatch[2] : event.summary;
-  const mode = routeMatch ? routeMatch[1].toLowerCase() : 'unknown';
+  const mode = routeMatch ? routeMatch[1].toLowerCase() : "unknown";
 
   return {
-    date: startTime.toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
+    date: startTime.toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
     }),
-    time: startTime.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
+    time: startTime.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
       hour12: true,
     }),
     route,
@@ -143,13 +146,13 @@ function formatEventForTable(event: TransitEvent): {
 // Print console table
 function printTable(events: TransitEvent[]) {
   if (events.length === 0) {
-    console.log('\nNo transit events to create.\n');
+    console.log("\nNo transit events to create.\n");
     return;
   }
 
-  console.log('\n' + '='.repeat(80));
-  console.log('TRANSIT EVENTS TO CREATE');
-  console.log('='.repeat(80));
+  console.log(`\n${"=".repeat(80)}`);
+  console.log("TRANSIT EVENTS TO CREATE");
+  console.log("=".repeat(80));
 
   const rows = events.map(formatEventForTable);
 
@@ -164,14 +167,14 @@ function printTable(events: TransitEvent[]) {
 
   // Header
   const header = [
-    'Date'.padEnd(cols.date),
-    'Time'.padEnd(cols.time),
-    'Mode'.padEnd(cols.mode),
-    'Duration'.padEnd(cols.duration),
-    'Route',
-  ].join('  ');
-  console.log('\n' + header);
-  console.log('-'.repeat(header.length + 20));
+    "Date".padEnd(cols.date),
+    "Time".padEnd(cols.time),
+    "Mode".padEnd(cols.mode),
+    "Duration".padEnd(cols.duration),
+    "Route",
+  ].join("  ");
+  console.log(`\n${header}`);
+  console.log("-".repeat(header.length + 20));
 
   // Rows
   for (const row of rows) {
@@ -182,11 +185,11 @@ function printTable(events: TransitEvent[]) {
         row.mode.padEnd(cols.mode),
         row.duration.padEnd(cols.duration),
         row.route,
-      ].join('  ')
+      ].join("  "),
     );
   }
 
-  console.log('\n' + `Total: ${events.length} transit event(s)\n`);
+  console.log(`\nTotal: ${events.length} transit event(s)\n`);
 }
 
 // Print JSON output (matching Python CLI format)
@@ -217,36 +220,36 @@ async function main() {
   const settings = await loadSettings();
 
   if (!settings.homeAddress) {
-    console.error('Error: Home address not configured.');
-    console.error('Set it in _past-projects/2025-calendar-cli/config.json or use --home flag.');
+    console.error("Error: Home address not configured.");
+    console.error("Set it in _past-projects/2025-calendar-cli/config.json or use --home flag.");
     process.exit(1);
   }
 
   if (!values.json) {
-    console.log('Calendar Transit Extension - Test Runner');
-    console.log('-'.repeat(40));
+    console.log("Calendar Transit Extension - Test Runner");
+    console.log("-".repeat(40));
     console.log(`Home address: ${settings.homeAddress}`);
     console.log(`Days forward: ${settings.daysForward}`);
     if (settings.lowTransitLocations && settings.lowTransitLocations.length > 0) {
-      console.log(`Low-transit locations: ${settings.lowTransitLocations.join(', ')}`);
+      console.log(`Low-transit locations: ${settings.lowTransitLocations.join(", ")}`);
     }
     if (settings.detectTrips) {
-      console.log(`Trip detection: enabled`);
+      console.log("Trip detection: enabled");
     }
-    console.log(`Mode: ${values.execute ? 'EXECUTE (will create events)' : 'DRY RUN'}`);
-    console.log('');
+    console.log(`Mode: ${values.execute ? "EXECUTE (will create events)" : "DRY RUN"}`);
+    console.log("");
   }
 
   // Fetch events
   if (!values.json) {
-    console.log('Fetching calendar events...');
+    console.log("Fetching calendar events...");
   }
 
   let events: CalendarEvent[];
   try {
     events = await fetchEvents(settings.daysForward, getAccessToken);
   } catch (error) {
-    console.error('Error fetching events:', error instanceof Error ? error.message : error);
+    console.error("Error fetching events:", error instanceof Error ? error.message : error);
     process.exit(1);
   }
 
@@ -256,7 +259,7 @@ async function main() {
 
   // Calculate transit events
   if (!values.json) {
-    console.log('Calculating transit times...');
+    console.log("Calculating transit times...");
   }
 
   let transitEvents: TransitEvent[];
@@ -267,7 +270,7 @@ async function main() {
       }
     });
   } catch (error) {
-    console.error('Error calculating transit:', error instanceof Error ? error.message : error);
+    console.error("Error calculating transit:", error instanceof Error ? error.message : error);
     process.exit(1);
   }
 
@@ -280,18 +283,18 @@ async function main() {
 
   // Execute if requested
   if (values.execute && transitEvents.length > 0) {
-    console.log('Creating transit events...');
+    console.log("Creating transit events...");
     try {
       const count = await insertTransitEvents(transitEvents, getAccessToken);
       console.log(`Created ${count} transit events.`);
     } catch (error) {
-      console.error('Error creating events:', error instanceof Error ? error.message : error);
+      console.error("Error creating events:", error instanceof Error ? error.message : error);
       process.exit(1);
     }
   }
 }
 
 main().catch((error) => {
-  console.error('Fatal error:', error);
+  console.error("Fatal error:", error);
   process.exit(1);
 });

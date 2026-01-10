@@ -5,14 +5,17 @@
  * to use the same authenticated Google account without Chrome extension context.
  */
 
-import { readFileSync, writeFileSync, existsSync } from 'fs';
-import { join, dirname } from 'path';
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 
-const TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token';
+const TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
 
 // Path to archived Python CLI's token.json (relative to this file's location)
-const CLI_ARCHIVE_DIR = join(dirname(import.meta.path), '../../../../_past-projects/2025-calendar-cli');
-const TOKEN_FILE = join(CLI_ARCHIVE_DIR, 'token.json');
+const CLI_ARCHIVE_DIR = join(
+  dirname(import.meta.path),
+  "../../../../_past-projects/2025-calendar-cli",
+);
+const TOKEN_FILE = join(CLI_ARCHIVE_DIR, "token.json");
 
 interface PythonTokenData {
   token: string;
@@ -30,13 +33,11 @@ interface PythonTokenData {
 function readTokenFile(): PythonTokenData {
   if (!existsSync(TOKEN_FILE)) {
     throw new Error(
-      `Token file not found at ${TOKEN_FILE}\n` +
-      `Please run the archived Python CLI first to authenticate:\n` +
-      `  cd _past-projects/2025-calendar-cli && python add_transit.py`
+      `Token file not found at ${TOKEN_FILE}\nPlease run the archived Python CLI first to authenticate:\n  cd _past-projects/2025-calendar-cli && python add_transit.py`,
     );
   }
 
-  const content = readFileSync(TOKEN_FILE, 'utf-8');
+  const content = readFileSync(TOKEN_FILE, "utf-8");
   return JSON.parse(content) as PythonTokenData;
 }
 
@@ -62,15 +63,15 @@ function isTokenExpired(expiryStr: string): boolean {
  */
 async function refreshAccessToken(tokenData: PythonTokenData): Promise<PythonTokenData> {
   const response = await fetch(TOKEN_ENDPOINT, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
+      "Content-Type": "application/x-www-form-urlencoded",
     },
     body: new URLSearchParams({
       refresh_token: tokenData.refresh_token,
       client_id: tokenData.client_id,
       client_secret: tokenData.client_secret,
-      grant_type: 'refresh_token',
+      grant_type: "refresh_token",
     }),
   });
 
@@ -101,10 +102,10 @@ export async function getAccessToken(): Promise<string> {
 
   // Check if token is expired
   if (isTokenExpired(tokenData.expiry)) {
-    console.log('Token expired, refreshing...');
+    console.log("Token expired, refreshing...");
     tokenData = await refreshAccessToken(tokenData);
     writeTokenFile(tokenData);
-    console.log('Token refreshed successfully');
+    console.log("Token refreshed successfully");
   }
 
   return tokenData.token;

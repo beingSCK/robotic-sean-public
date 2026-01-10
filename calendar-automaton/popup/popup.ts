@@ -2,17 +2,17 @@
  * Popup UI Controller for Calendar Transit Robot
  */
 
-import type { UserSettings, TransitEvent } from '../src/types.ts';
-import { DEFAULT_SETTINGS } from '../src/config.ts';
-import { fetchEvents, insertTransitEvents } from '../src/calendarService.ts';
-import { calculateTransitEvents } from '../src/eventProcessor.ts';
 import {
+  clearAuth,
+  clearAuthCompleteFlag,
+  getAccessToken,
   hasTokens,
   onAuthComplete,
-  clearAuthCompleteFlag,
-  clearAuth,
-  getAccessToken,
-} from '../src/authManager.ts';
+} from "../src/authManager.ts";
+import { fetchEvents, insertTransitEvents } from "../src/calendarService.ts";
+import { DEFAULT_SETTINGS } from "../src/config.ts";
+import { calculateTransitEvents } from "../src/eventProcessor.ts";
+import type { TransitEvent, UserSettings } from "../src/types.ts";
 
 // DOM Elements
 let homeAddressInput: HTMLInputElement;
@@ -60,9 +60,9 @@ async function saveSettings(settings: Partial<UserSettings>): Promise<void> {
  */
 function setStatus(message: string, isError = false, isScanning = false) {
   statusMessage.textContent = message;
-  statusMessage.className = 'status';
-  if (isError) statusMessage.classList.add('error');
-  if (isScanning) statusMessage.classList.add('scanning');
+  statusMessage.className = "status";
+  if (isError) statusMessage.classList.add("error");
+  if (isScanning) statusMessage.classList.add("scanning");
 }
 
 /**
@@ -71,7 +71,7 @@ function setStatus(message: string, isError = false, isScanning = false) {
 function showResults(events: TransitEvent[]) {
   currentTransitEvents = events;
 
-  transitList.innerHTML = '';
+  transitList.innerHTML = "";
 
   if (events.length === 0) {
     transitList.innerHTML = '<div class="empty-state">No transit events to create</div>';
@@ -80,22 +80,22 @@ function showResults(events: TransitEvent[]) {
     createBtn.disabled = false;
 
     for (const event of events) {
-      const item = document.createElement('div');
-      item.className = 'transit-item';
-      if (event.summary.startsWith('DRIVE:')) {
-        item.classList.add('driving');
+      const item = document.createElement("div");
+      item.className = "transit-item";
+      if (event.summary.startsWith("DRIVE:")) {
+        item.classList.add("driving");
       }
 
       // Extract time from the event
       const startTime = new Date(event.start.dateTime);
       const timeStr = startTime.toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit',
+        hour: "2-digit",
+        minute: "2-digit",
       });
       const dateStr = startTime.toLocaleDateString([], {
-        weekday: 'short',
-        month: 'short',
-        day: 'numeric',
+        weekday: "short",
+        month: "short",
+        day: "numeric",
       });
 
       item.innerHTML = `
@@ -118,7 +118,7 @@ function showSuccess(count: number) {
   resultsSection.hidden = true;
   successCount.textContent = count.toString();
   successSection.hidden = false;
-  setStatus(''); // Clear status message
+  setStatus(""); // Clear status message
 }
 
 /**
@@ -128,7 +128,7 @@ function resetUI() {
   resultsSection.hidden = true;
   successSection.hidden = true;
   scanBtn.disabled = false;
-  setStatus('');
+  setStatus("");
   currentTransitEvents = [];
 }
 
@@ -136,20 +136,19 @@ function resetUI() {
  * Escape HTML to prevent XSS.
  */
 function escapeHtml(text: string): string {
-  const div = document.createElement('div');
+  const div = document.createElement("div");
   div.textContent = text;
   return div.innerHTML;
 }
-
 
 /**
  * Update the scan button based on auth state.
  */
 function updateScanButton(isAuthenticated: boolean) {
   if (isAuthenticated) {
-    scanBtn.textContent = 'Scan Calendar';
+    scanBtn.textContent = "Scan Calendar";
   } else {
-    scanBtn.textContent = 'Connect to Google Calendar';
+    scanBtn.textContent = "Connect to Google Calendar";
   }
 }
 
@@ -157,13 +156,13 @@ function updateScanButton(isAuthenticated: boolean) {
  * Handle scan button click.
  */
 async function handleScan() {
-  console.log('handleScan called');
+  console.log("handleScan called");
 
   // Validate settings
   if (!currentSettings.homeAddress.trim()) {
     settingsSection.open = true;
     homeAddressInput.focus();
-    setStatus('Please enter your home address first', true);
+    setStatus("Please enter your home address first", true);
     return;
   }
 
@@ -173,7 +172,7 @@ async function handleScan() {
   if (!isAuthenticated) {
     // First time - need to authorize
     scanBtn.disabled = true;
-    setStatus('Opening Google sign-in... (click extension again after signing in)', false, true);
+    setStatus("Opening Google sign-in... (click extension again after signing in)", false, true);
 
     try {
       // This will trigger OAuth via background worker
@@ -182,22 +181,22 @@ async function handleScan() {
     } catch (error) {
       // This is expected - popup closes during OAuth
       // User will click extension again and oauthJustCompleted will be true
-      console.log('Auth flow started, popup may close');
+      console.log("Auth flow started, popup may close");
     }
     return;
   }
 
   // We have tokens - proceed with scan
   scanBtn.disabled = true;
-  setStatus('Fetching calendar events...', false, true);
+  setStatus("Fetching calendar events...", false, true);
 
   try {
-    console.log('Fetching events...');
+    console.log("Fetching events...");
     const events = await fetchEvents(currentSettings.daysForward, getAccessToken);
-    console.log('Fetched events:', events.length);
+    console.log("Fetched events:", events.length);
 
     if (events.length === 0) {
-      setStatus('No events found in the next ' + currentSettings.daysForward + ' days');
+      setStatus(`No events found in the next ${currentSettings.daysForward} days`);
       scanBtn.disabled = false;
       return;
     }
@@ -205,17 +204,15 @@ async function handleScan() {
     setStatus(`Found ${events.length} events. Calculating transit times...`, false, true);
 
     // Calculate transit events
-    const transitEvents = await calculateTransitEvents(
-      events,
-      currentSettings,
-      (message) => setStatus(message, false, true)
+    const transitEvents = await calculateTransitEvents(events, currentSettings, (message) =>
+      setStatus(message, false, true),
     );
 
     setStatus(`Found ${transitEvents.length} transit events to create`);
     showResults(transitEvents);
   } catch (error) {
-    console.error('Scan error:', error);
-    setStatus(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`, true);
+    console.error("Scan error:", error);
+    setStatus(`Error: ${error instanceof Error ? error.message : "Unknown error"}`, true);
     scanBtn.disabled = false;
   }
 }
@@ -228,14 +225,17 @@ async function handleCreate() {
 
   createBtn.disabled = true;
   cancelBtn.disabled = true;
-  setStatus('Creating transit events...', false, true);
+  setStatus("Creating transit events...", false, true);
 
   try {
     const count = await insertTransitEvents(currentTransitEvents, getAccessToken);
     showSuccess(count);
   } catch (error) {
-    console.error('Create error:', error);
-    setStatus(`Error creating events: ${error instanceof Error ? error.message : 'Unknown error'}`, true);
+    console.error("Create error:", error);
+    setStatus(
+      `Error creating events: ${error instanceof Error ? error.message : "Unknown error"}`,
+      true,
+    );
     createBtn.disabled = false;
     cancelBtn.disabled = false;
   }
@@ -248,7 +248,7 @@ async function handleDisconnect() {
   await clearAuth();
   updateScanButton(false);
   disconnectBtn.hidden = true;
-  setStatus('Disconnected from Google Calendar');
+  setStatus("Disconnected from Google Calendar");
 }
 
 /**
@@ -256,7 +256,7 @@ async function handleDisconnect() {
  */
 async function handleSaveSettings() {
   const homeAddress = homeAddressInput.value.trim();
-  const daysForward = parseInt(daysForwardInput.value, 10) || 7;
+  const daysForward = Number.parseInt(daysForwardInput.value, 10) || 7;
 
   currentSettings = {
     ...currentSettings,
@@ -265,7 +265,7 @@ async function handleSaveSettings() {
   };
 
   await saveSettings(currentSettings);
-  setStatus('Settings saved!');
+  setStatus("Settings saved!");
 
   // Auto-close settings if home address is set
   if (homeAddress) {
@@ -280,21 +280,21 @@ async function handleSaveSettings() {
  */
 async function init() {
   // Get DOM elements
-  homeAddressInput = document.getElementById('home-address') as HTMLInputElement;
-  daysForwardInput = document.getElementById('days-forward') as HTMLInputElement;
-  saveSettingsBtn = document.getElementById('save-settings') as HTMLButtonElement;
-  scanBtn = document.getElementById('scan-btn') as HTMLButtonElement;
-  statusMessage = document.getElementById('status-message') as HTMLDivElement;
-  settingsSection = document.getElementById('settings-section') as HTMLDetailsElement;
-  actionSection = document.getElementById('action-section') as HTMLDivElement;
-  resultsSection = document.getElementById('results-section') as HTMLDivElement;
-  transitList = document.getElementById('transit-list') as HTMLDivElement;
-  createBtn = document.getElementById('create-btn') as HTMLButtonElement;
-  cancelBtn = document.getElementById('cancel-btn') as HTMLButtonElement;
-  successSection = document.getElementById('success-section') as HTMLDivElement;
-  successCount = document.getElementById('success-count') as HTMLSpanElement;
-  doneBtn = document.getElementById('done-btn') as HTMLButtonElement;
-  disconnectBtn = document.getElementById('disconnect-btn') as HTMLButtonElement;
+  homeAddressInput = document.getElementById("home-address") as HTMLInputElement;
+  daysForwardInput = document.getElementById("days-forward") as HTMLInputElement;
+  saveSettingsBtn = document.getElementById("save-settings") as HTMLButtonElement;
+  scanBtn = document.getElementById("scan-btn") as HTMLButtonElement;
+  statusMessage = document.getElementById("status-message") as HTMLDivElement;
+  settingsSection = document.getElementById("settings-section") as HTMLDetailsElement;
+  actionSection = document.getElementById("action-section") as HTMLDivElement;
+  resultsSection = document.getElementById("results-section") as HTMLDivElement;
+  transitList = document.getElementById("transit-list") as HTMLDivElement;
+  createBtn = document.getElementById("create-btn") as HTMLButtonElement;
+  cancelBtn = document.getElementById("cancel-btn") as HTMLButtonElement;
+  successSection = document.getElementById("success-section") as HTMLDivElement;
+  successCount = document.getElementById("success-count") as HTMLSpanElement;
+  doneBtn = document.getElementById("done-btn") as HTMLButtonElement;
+  disconnectBtn = document.getElementById("disconnect-btn") as HTMLButtonElement;
 
   // Load settings
   currentSettings = await loadSettings();
@@ -312,34 +312,39 @@ async function init() {
   disconnectBtn.hidden = !isAuthenticated;
 
   // Add event listeners
-  saveSettingsBtn.addEventListener('click', handleSaveSettings);
-  scanBtn.addEventListener('click', handleScan);
-  createBtn.addEventListener('click', handleCreate);
-  cancelBtn.addEventListener('click', resetUI);
-  doneBtn.addEventListener('click', resetUI);
-  disconnectBtn.addEventListener('click', handleDisconnect);
+  saveSettingsBtn.addEventListener("click", handleSaveSettings);
+  scanBtn.addEventListener("click", handleScan);
+  createBtn.addEventListener("click", handleCreate);
+  cancelBtn.addEventListener("click", resetUI);
+  doneBtn.addEventListener("click", resetUI);
+  disconnectBtn.addEventListener("click", handleDisconnect);
 
   // Save settings on input change (debounced via blur)
-  homeAddressInput.addEventListener('blur', handleSaveSettings);
-  daysForwardInput.addEventListener('blur', handleSaveSettings);
+  homeAddressInput.addEventListener("blur", handleSaveSettings);
+  daysForwardInput.addEventListener("blur", handleSaveSettings);
 
   // Check if OAuth just completed (background worker sets this flag)
   const oauthJustCompleted = await onAuthComplete();
-  console.log('Init check - oauthJustCompleted:', oauthJustCompleted, 'homeAddress:', currentSettings.homeAddress);
+  console.log(
+    "Init check - oauthJustCompleted:",
+    oauthJustCompleted,
+    "homeAddress:",
+    currentSettings.homeAddress,
+  );
   if (oauthJustCompleted) {
     await clearAuthCompleteFlag();
     updateScanButton(true); // We now have tokens
 
     if (currentSettings.homeAddress) {
-      console.log('OAuth just completed, auto-scanning...');
-      setStatus('Connected! Scanning calendar...', false, true);
+      console.log("OAuth just completed, auto-scanning...");
+      setStatus("Connected! Scanning calendar...", false, true);
       // Small delay to ensure popup is fully rendered
       setTimeout(() => handleScan(), 100);
     } else {
-      setStatus('Connected! Enter your home address to continue.');
+      setStatus("Connected! Enter your home address to continue.");
     }
   }
 }
 
 // Start when DOM is ready
-document.addEventListener('DOMContentLoaded', init);
+document.addEventListener("DOMContentLoaded", init);

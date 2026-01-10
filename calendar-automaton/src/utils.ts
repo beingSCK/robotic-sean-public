@@ -2,7 +2,7 @@
  * Utility functions for Calendar Transit Extension
  */
 
-import { DEFAULT_TIMEZONE, SECONDS_PER_MINUTE } from './config.ts';
+import { DEFAULT_TIMEZONE, SECONDS_PER_MINUTE } from "./config.ts";
 
 /**
  * Parse an ISO 8601 datetime string to a Date object.
@@ -24,17 +24,17 @@ export function formatDateTime(date: Date, timeZone: string = DEFAULT_TIMEZONE):
   // Get ISO string and handle timezone
   // For simplicity, we'll use the local ISO string format
   const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  const seconds = String(date.getSeconds()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const seconds = String(date.getSeconds()).padStart(2, "0");
 
   // Get timezone offset
   const offset = date.getTimezoneOffset();
-  const offsetHours = String(Math.abs(Math.floor(offset / 60))).padStart(2, '0');
-  const offsetMinutes = String(Math.abs(offset % 60)).padStart(2, '0');
-  const offsetSign = offset <= 0 ? '+' : '-';
+  const offsetHours = String(Math.abs(Math.floor(offset / 60))).padStart(2, "0");
+  const offsetMinutes = String(Math.abs(offset % 60)).padStart(2, "0");
+  const offsetSign = offset <= 0 ? "+" : "-";
 
   return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}${offsetSign}${offsetHours}:${offsetMinutes}`;
 }
@@ -45,7 +45,7 @@ export function formatDateTime(date: Date, timeZone: string = DEFAULT_TIMEZONE):
  */
 export function getLocationName(location: string): string {
   // Take everything before the first comma
-  const parts = location.split(',');
+  const parts = location.split(",");
   return parts[0]?.trim() || location;
 }
 
@@ -54,8 +54,8 @@ export function getLocationName(location: string): string {
  */
 export function getDateString(date: Date): string {
   const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 }
 
@@ -66,8 +66,8 @@ export function getDateString(date: Date): string {
 export function getHourFromDateTime(dateTimeStr: string): number | null {
   // Format: 2025-01-15T09:00:00-05:00
   const match = dateTimeStr.match(/T(\d{2}):/);
-  if (match && match[1]) {
-    return parseInt(match[1], 10);
+  if (match?.[1]) {
+    return Number.parseInt(match[1], 10);
   }
   return null;
 }
@@ -88,7 +88,7 @@ export function parseDurationSeconds(durationStr: string): number {
   if (!match) {
     throw new Error(`Invalid duration format: ${durationStr}`);
   }
-  return parseInt(match[1], 10);
+  return Number.parseInt(match[1], 10);
 }
 
 /**

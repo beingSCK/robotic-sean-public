@@ -4,8 +4,8 @@
 
 // Storage keys - single source of truth for chrome.storage keys
 export const STORAGE_KEYS = {
-  OAUTH_TOKENS: 'oauth_tokens',
-  OAUTH_JUST_COMPLETED: 'oauthJustCompleted',
+  OAUTH_TOKENS: "oauth_tokens",
+  OAUTH_JUST_COMPLETED: "oauthJustCompleted",
 } as const;
 
 // OAuth token data stored in chrome.storage.local
@@ -21,8 +21,8 @@ export interface CalendarEvent {
   summary?: string;
   location?: string;
   start: {
-    dateTime?: string;  // ISO 8601 format
-    date?: string;      // YYYY-MM-DD for all-day events
+    dateTime?: string; // ISO 8601 format
+    date?: string; // YYYY-MM-DD for all-day events
     timeZone?: string;
   };
   end: {
@@ -31,7 +31,7 @@ export interface CalendarEvent {
     timeZone?: string;
   };
   colorId?: string;
-  conferenceData?: object;  // Present if it's a video call
+  conferenceData?: object; // Present if it's a video call
   description?: string;
 }
 
@@ -55,7 +55,7 @@ export interface TransitEvent {
 export interface RouteResult {
   durationMinutes: number;
   distanceMeters: number;
-  mode: 'transit' | 'driving';
+  mode: "transit" | "driving";
 }
 
 // User settings stored in chrome.storage
@@ -63,26 +63,26 @@ export interface UserSettings {
   homeAddress: string;
   daysForward: number;
   transitColorId: string;
-  lowTransitLocations?: string[];  // Location patterns where transit options are limited (force driving)
-  homeAirports?: string[];      // Airports that indicate outbound flights (for trip detection)
-  detectTrips?: boolean;        // Whether to enable trip date detection
+  lowTransitLocations?: string[]; // Location patterns where transit options are limited (force driving)
+  homeAirports?: string[]; // Airports that indicate outbound flights (for trip detection)
+  detectTrips?: boolean; // Whether to enable trip date detection
 }
 
 // Skip reasons - type-safe enum for event filtering
 export enum SkipReason {
-  NO_LOCATION = 'no_location',
-  ALREADY_TRANSIT_EVENT = 'already_transit_event',
-  HOLD_EVENT = 'hold_event',  // colorId 8 (graphite) = tentative/conditional events
-  VIDEO_CALL_CONFERENCE = 'video_call_conference',
-  VIDEO_CALL_KEYWORD = 'video_call_keyword',
-  OVERNIGHT_EVENT = 'overnight_event',
-  ALL_DAY_EVENT = 'all_day_event',
+  NO_LOCATION = "no_location",
+  ALREADY_TRANSIT_EVENT = "already_transit_event",
+  HOLD_EVENT = "hold_event", // colorId 8 (graphite) = tentative/conditional events
+  VIDEO_CALL_CONFERENCE = "video_call_conference",
+  VIDEO_CALL_KEYWORD = "video_call_keyword",
+  OVERNIGHT_EVENT = "overnight_event",
+  ALL_DAY_EVENT = "all_day_event",
 }
 
 // Skip result for event filtering
 export interface SkipResult {
   shouldSkip: boolean;
-  reason: SkipReason | '';
+  reason: SkipReason | "";
 }
 
 // Routes API error with context for debugging
@@ -91,10 +91,10 @@ export class RoutesApiError extends Error {
     message: string,
     public statusCode: number,
     public isTransient: boolean,
-    public context?: { origin?: string; destination?: string; travelMode?: string }
+    public context?: { origin?: string; destination?: string; travelMode?: string },
   ) {
     super(message);
-    this.name = 'RoutesApiError';
+    this.name = "RoutesApiError";
   }
 }
 

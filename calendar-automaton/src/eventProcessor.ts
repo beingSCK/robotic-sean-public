@@ -3,36 +3,36 @@
  * Ported from add_transit.py (simplified for MVP)
  */
 
-import type {
-  CalendarEvent,
-  TransitEvent,
-  UserSettings,
-  SkipResult,
-  EventsByDay,
-  RouteResult,
-} from './types.ts';
-import { SkipReason, RoutesApiError } from './types.ts';
 import {
-  VIDEO_CALL_KEYWORDS,
-  FLIGHT_KEYWORDS,
-  STAY_KEYWORDS,
   DEFAULT_HOME_AIRPORTS,
+  DEFAULT_TIMEZONE,
+  FLIGHT_KEYWORDS,
+  MAX_TRANSIT_MINUTES,
+  MAX_WALKABLE_MINUTES,
+  MILLISECONDS_PER_MINUTE,
   MIN_TRIP_MINUTES,
   SHORT_TRIP_THRESHOLD_MINUTES,
-  MAX_WALKABLE_MINUTES,
-  MAX_TRANSIT_MINUTES,
-  DEFAULT_TIMEZONE,
-  MILLISECONDS_PER_MINUTE,
-} from './config.ts';
+  STAY_KEYWORDS,
+  VIDEO_CALL_KEYWORDS,
+} from "./config.ts";
+import { getTransitTime, getWalkingTime } from "./transitCalculator.ts";
+import type {
+  CalendarEvent,
+  EventsByDay,
+  RouteResult,
+  SkipResult,
+  TransitEvent,
+  UserSettings,
+} from "./types.ts";
+import { RoutesApiError, SkipReason } from "./types.ts";
 import {
-  parseDateTime,
-  formatDateTime,
-  getLocationName,
-  getHourFromDateTime,
-  isSameLocation,
   extractDateString,
-} from './utils.ts';
-import { getTransitTime, getWalkingTime } from './transitCalculator.ts';
+  formatDateTime,
+  getHourFromDateTime,
+  getLocationName,
+  isSameLocation,
+  parseDateTime,
+} from "./utils.ts";
 
 // ============================================================================
 // Event Filtering
@@ -53,7 +53,7 @@ export function shouldSkipEvent(event: CalendarEvent, settings: UserSettings): S
   }
 
   // Skip "hold" events (colorId 8 = graphite) - tentative/conditional events not yet confirmed
-  if (event.colorId === '8') {
+  if (event.colorId === "8") {
     return { shouldSkip: true, reason: SkipReason.HOLD_EVENT };
   }
 
@@ -84,7 +84,7 @@ export function shouldSkipEvent(event: CalendarEvent, settings: UserSettings): S
     return { shouldSkip: true, reason: SkipReason.ALL_DAY_EVENT };
   }
 
-  return { shouldSkip: false, reason: '' };
+  return { shouldSkip: false, reason: "" };
 }
 
 // ============================================================================
@@ -172,8 +172,8 @@ function createTransitEvent(
   eventStart: Date,
   timeZone: string,
   colorId: string,
-  modeOverride?: 'drive' | 'transit' | 'walk',
-  durationOverride?: number
+  modeOverride?: "drive" | "transit" | "walk",
+  durationOverride?: number,
 ): TransitEvent {
   // Use overrides if provided, otherwise derive from transitResult
   const effectiveMode = modeOverride || transitResult.mode;
@@ -182,20 +182,20 @@ function createTransitEvent(
   // Determine display prefix based on mode
   let modePrefix: string;
   let modeDescription: string;
-  if (effectiveMode === 'walk') {
-    modePrefix = 'WALK';
-    modeDescription = 'walking';
-  } else if (effectiveMode === 'driving' || effectiveMode === 'drive') {
-    modePrefix = 'DRIVE';
-    modeDescription = 'driving';
+  if (effectiveMode === "walk") {
+    modePrefix = "WALK";
+    modeDescription = "walking";
+  } else if (effectiveMode === "driving" || effectiveMode === "drive") {
+    modePrefix = "DRIVE";
+    modeDescription = "driving";
   } else {
-    modePrefix = 'TRANSIT';
-    modeDescription = 'transit';
+    modePrefix = "TRANSIT";
+    modeDescription = "transit";
   }
 
   const destinationName = getLocationName(destination);
   const transitStartTime = new Date(
-    eventStart.getTime() - effectiveDuration * MILLISECONDS_PER_MINUTE
+    eventStart.getTime() - effectiveDuration * MILLISECONDS_PER_MINUTE,
   );
 
   return createDerivedEvent({
@@ -230,8 +230,8 @@ function createReturnHomeEvent(
   lastEventEnd: Date,
   timeZone: string,
   colorId: string,
-  modeOverride?: 'drive' | 'transit' | 'walk',
-  durationOverride?: number
+  modeOverride?: "drive" | "transit" | "walk",
+  durationOverride?: number,
 ): TransitEvent {
   // Use overrides if provided, otherwise derive from transitResult
   const effectiveMode = modeOverride || transitResult.mode;
@@ -240,19 +240,19 @@ function createReturnHomeEvent(
   // Determine display prefix based on mode
   let modePrefix: string;
   let modeDescription: string;
-  if (effectiveMode === 'walk') {
-    modePrefix = 'WALK';
-    modeDescription = 'walking';
-  } else if (effectiveMode === 'driving' || effectiveMode === 'drive') {
-    modePrefix = 'DRIVE';
-    modeDescription = 'driving';
+  if (effectiveMode === "walk") {
+    modePrefix = "WALK";
+    modeDescription = "walking";
+  } else if (effectiveMode === "driving" || effectiveMode === "drive") {
+    modePrefix = "DRIVE";
+    modeDescription = "driving";
   } else {
-    modePrefix = 'TRANSIT';
-    modeDescription = 'transit';
+    modePrefix = "TRANSIT";
+    modeDescription = "transit";
   }
 
   const returnEndTime = new Date(
-    lastEventEnd.getTime() + effectiveDuration * MILLISECONDS_PER_MINUTE
+    lastEventEnd.getTime() + effectiveDuration * MILLISECONDS_PER_MINUTE,
   );
 
   return createDerivedEvent({
@@ -278,7 +278,7 @@ function createReturnHomeEvent(
  */
 type TripValidationResult =
   | { valid: false; reason: string }
-  | { valid: true; mode?: 'drive' | 'walk'; walkMinutes?: number };
+  | { valid: true; mode?: "drive" | "walk"; walkMinutes?: number };
 
 /**
  * Check if a trip duration is valid, considering walkability.
@@ -293,7 +293,7 @@ async function isValidTripDuration(
   driveDurationMin: number,
   origin: string,
   destination: string,
-  lowTransitLocations: string[] = []
+  lowTransitLocations: string[] = [],
 ): Promise<TripValidationResult> {
   // Sanity cap - skip unreasonably long trips
   if (driveDurationMin > MAX_TRANSIT_MINUTES) {
@@ -314,9 +314,11 @@ async function isValidTripDuration(
   // Apply smart checks
 
   // If low-transit location, include drive event (can't walk there anyway)
-  if (isLowTransitLocation(origin, lowTransitLocations) ||
-      isLowTransitLocation(destination, lowTransitLocations)) {
-    return { valid: true, mode: 'drive' };
+  if (
+    isLowTransitLocation(origin, lowTransitLocations) ||
+    isLowTransitLocation(destination, lowTransitLocations)
+  ) {
+    return { valid: true, mode: "drive" };
   }
 
   // Otherwise, check if it's walkable
@@ -325,24 +327,24 @@ async function isValidTripDuration(
 
     if (walkTime === null) {
       // No walk route available → keep drive event
-      return { valid: true, mode: 'drive' };
+      return { valid: true, mode: "drive" };
     }
 
     if (walkTime > MAX_WALKABLE_MINUTES) {
       // Too far to walk → keep drive event
-      return { valid: true, mode: 'drive' };
+      return { valid: true, mode: "drive" };
     }
 
     if (walkTime >= MIN_TRIP_MINUTES) {
       // Walkable and worth tracking → create WALK event
-      return { valid: true, mode: 'walk', walkMinutes: walkTime };
+      return { valid: true, mode: "walk", walkMinutes: walkTime };
     }
 
     // Walk is too short to track
     return { valid: false, reason: `too short to track (${walkTime} min walk)` };
   } catch {
     // API error getting walk time - fall back to drive event
-    return { valid: true, mode: 'drive' };
+    return { valid: true, mode: "drive" };
   }
 }
 
@@ -360,28 +362,24 @@ async function isValidTripDuration(
  */
 function detectTripDates(
   events: CalendarEvent[],
-  homeAirports: string[] = DEFAULT_HOME_AIRPORTS
+  homeAirports: string[] = DEFAULT_HOME_AIRPORTS,
 ): Set<string> {
   const tripDates = new Set<string>();
 
   for (const event of events) {
-    const summary = (event.summary || '').toLowerCase();
-    const location = (event.location || '').toLowerCase();
+    const summary = (event.summary || "").toLowerCase();
+    const location = (event.location || "").toLowerCase();
 
     // Method 1: Detect flights departing from home airports
     const isFlight = FLIGHT_KEYWORDS.some((kw) => summary.includes(kw));
 
     if (isFlight) {
       // Check if departing from home area
-      const isOutbound = homeAirports.some((airport) =>
-        location.includes(airport.toLowerCase())
-      );
+      const isOutbound = homeAirports.some((airport) => location.includes(airport.toLowerCase()));
 
       if (isOutbound) {
         // Get flight date
-        const flightDate = extractDateString(
-          event.start.dateTime || event.start.date || ''
-        );
+        const flightDate = extractDateString(event.start.dateTime || event.start.date || "");
         if (flightDate) {
           tripDates.add(flightDate);
         }
@@ -442,7 +440,7 @@ function overlapsExistingTransit(
   start: Date,
   end: Date,
   events: CalendarEvent[],
-  transitColorId: string
+  transitColorId: string,
 ): boolean {
   for (const event of events) {
     // Only check existing transit events
@@ -483,7 +481,7 @@ function logSkip(onProgress: ProgressCallback, eventName: string, reason: string
 
 /** Log a transit event creation */
 function logCreate(onProgress: ProgressCallback, summary: string, durationMin?: number): void {
-  const suffix = durationMin !== undefined ? ` (${durationMin} min)` : '';
+  const suffix = durationMin !== undefined ? ` (${durationMin} min)` : "";
   onProgress?.(`  Create: ${summary}${suffix}`);
 }
 
@@ -498,7 +496,7 @@ function logCreate(onProgress: ProgressCallback, summary: string, durationMin?: 
 export async function calculateTransitEvents(
   events: CalendarEvent[],
   settings: UserSettings,
-  onProgress?: (message: string) => void
+  onProgress?: (message: string) => void,
 ): Promise<TransitEvent[]> {
   const transitEvents: TransitEvent[] = [];
   const byDay = groupEventsByDay(events);
@@ -509,7 +507,7 @@ export async function calculateTransitEvents(
   if (settings.detectTrips) {
     tripDates = detectTripDates(events, settings.homeAirports || DEFAULT_HOME_AIRPORTS);
     if (tripDates.size > 0) {
-      onProgress?.(`Detected trip dates: ${Array.from(tripDates).sort().join(', ')}`);
+      onProgress?.(`Detected trip dates: ${Array.from(tripDates).sort().join(", ")}`);
     }
   } else {
     tripDates = new Set();
@@ -538,12 +536,12 @@ export async function calculateTransitEvents(
     onProgress?.(`Processing ${dateStr}...`);
 
     let previousLocation = settings.homeAddress;
-    let previousLocationName = 'Home';
+    let previousLocationName = "Home";
     let previousEventEnd: Date | null = null; // Track when previous event ends for departure time
 
     // Process each event in order
     for (const event of dayEvents) {
-      const eventName = event.summary || '(untitled)';
+      const eventName = event.summary || "(untitled)";
       const skipResult = shouldSkipEvent(event, settings);
       if (skipResult.shouldSkip) {
         logSkip(onProgress, eventName, skipResult.reason);
@@ -577,17 +575,22 @@ export async function calculateTransitEvents(
             ? previousEventEnd
             : new Date(eventStartDate.getTime() - 60 * MILLISECONDS_PER_MINUTE);
 
-          const transitResult = await getTransitTime(previousLocation, location, forceDrive, departureTime);
+          const transitResult = await getTransitTime(
+            previousLocation,
+            location,
+            forceDrive,
+            departureTime,
+          );
 
           if (!transitResult) {
-            logSkip(onProgress, eventName, 'no route found');
+            logSkip(onProgress, eventName, "no route found");
           } else {
             // Validate duration with smart walkability checks
             const durationCheck = await isValidTripDuration(
               transitResult.durationMinutes,
               previousLocation,
               location,
-              settings.lowTransitLocations
+              settings.lowTransitLocations,
             );
 
             if (!durationCheck.valid) {
@@ -599,12 +602,19 @@ export async function calculateTransitEvents(
 
               // eventStartDate already computed above for departure time
               const transitStartTime = new Date(
-                eventStartDate.getTime() - effectiveDuration * MILLISECONDS_PER_MINUTE
+                eventStartDate.getTime() - effectiveDuration * MILLISECONDS_PER_MINUTE,
               );
 
               // Check for overlap with existing transit events
-              if (overlapsExistingTransit(transitStartTime, eventStartDate, events, settings.transitColorId)) {
-                logSkip(onProgress, eventName, 'overlaps existing transit');
+              if (
+                overlapsExistingTransit(
+                  transitStartTime,
+                  eventStartDate,
+                  events,
+                  settings.transitColorId,
+                )
+              ) {
+                logSkip(onProgress, eventName, "overlaps existing transit");
               } else {
                 const transitEvent = createTransitEvent(
                   transitResult,
@@ -615,7 +625,7 @@ export async function calculateTransitEvents(
                   timeZone,
                   settings.transitColorId,
                   effectiveMode,
-                  durationCheck.walkMinutes // Only pass if it's a WALK event
+                  durationCheck.walkMinutes, // Only pass if it's a WALK event
                 );
                 transitEvents.push(transitEvent);
                 logCreate(onProgress, transitEvent.summary, effectiveDuration);
@@ -641,11 +651,11 @@ export async function calculateTransitEvents(
     // Add return-home transit after last event (if not already home)
     if (!isSameLocation(previousLocation, settings.homeAddress)) {
       const lastEvent = dayEvents.findLast(
-        (e) => e.start.dateTime && !shouldSkipEvent(e, settings).shouldSkip
+        (e) => e.start.dateTime && !shouldSkipEvent(e, settings).shouldSkip,
       );
 
       if (lastEvent?.end?.dateTime) {
-        const returnLabel = 'Return home';
+        const returnLabel = "Return home";
         const lastEventEnd = parseDateTime(lastEvent.end.dateTime);
         let returnTransit: RouteResult | null;
         try {
@@ -655,7 +665,12 @@ export async function calculateTransitEvents(
             isLowTransitLocation(settings.homeAddress, settings.lowTransitLocations);
 
           // Use last event end as departure time for traffic-aware routing
-          returnTransit = await getTransitTime(previousLocation, settings.homeAddress, forceDrive, lastEventEnd);
+          returnTransit = await getTransitTime(
+            previousLocation,
+            settings.homeAddress,
+            forceDrive,
+            lastEventEnd,
+          );
         } catch (error) {
           if (error instanceof RoutesApiError) {
             logSkip(onProgress, returnLabel, `API error: ${error.message}`);
@@ -664,14 +679,14 @@ export async function calculateTransitEvents(
         }
 
         if (!returnTransit) {
-          logSkip(onProgress, returnLabel, 'no route found');
+          logSkip(onProgress, returnLabel, "no route found");
         } else {
           // Validate duration with smart walkability checks
           const durationCheck = await isValidTripDuration(
             returnTransit.durationMinutes,
             previousLocation,
             settings.homeAddress,
-            settings.lowTransitLocations
+            settings.lowTransitLocations,
           );
 
           if (!durationCheck.valid) {
@@ -683,12 +698,14 @@ export async function calculateTransitEvents(
 
             // lastEventEnd already computed above for departure time
             const returnEndTime = new Date(
-              lastEventEnd.getTime() + effectiveDuration * MILLISECONDS_PER_MINUTE
+              lastEventEnd.getTime() + effectiveDuration * MILLISECONDS_PER_MINUTE,
             );
 
             // Check for overlap with existing transit events
-            if (overlapsExistingTransit(lastEventEnd, returnEndTime, events, settings.transitColorId)) {
-              logSkip(onProgress, returnLabel, 'overlaps existing transit');
+            if (
+              overlapsExistingTransit(lastEventEnd, returnEndTime, events, settings.transitColorId)
+            ) {
+              logSkip(onProgress, returnLabel, "overlaps existing transit");
             } else {
               const timeZone = lastEvent.end.timeZone || DEFAULT_TIMEZONE;
 
@@ -701,7 +718,7 @@ export async function calculateTransitEvents(
                 timeZone,
                 settings.transitColorId,
                 effectiveMode,
-                durationCheck.walkMinutes // Only pass if it's a WALK event
+                durationCheck.walkMinutes, // Only pass if it's a WALK event
               );
 
               transitEvents.push(returnEvent);

@@ -3,20 +3,16 @@
  * Ported from transit_calculator.py (simplified for MVP)
  */
 
-import {
-  ROUTES_API_KEY,
-  TRANSIT_FALLBACK_THRESHOLD,
-  ROUTES_API_TIMEOUT_MS,
-} from './config.ts';
-import { RoutesApiError } from './types.ts';
-import type { RouteResult } from './types.ts';
-import { parseDurationSeconds, toMinutes, validateAddress } from './utils.ts';
+import { ROUTES_API_KEY, ROUTES_API_TIMEOUT_MS, TRANSIT_FALLBACK_THRESHOLD } from "./config.ts";
+import { RoutesApiError } from "./types.ts";
+import type { RouteResult } from "./types.ts";
+import { parseDurationSeconds, toMinutes, validateAddress } from "./utils.ts";
 
-const ROUTES_API_ENDPOINT = 'https://routes.googleapis.com/directions/v2:computeRoutes';
+const ROUTES_API_ENDPOINT = "https://routes.googleapis.com/directions/v2:computeRoutes";
 
 interface RoutesApiResponse {
   routes?: Array<{
-    duration?: string;  // e.g., "1800s"
+    duration?: string; // e.g., "1800s"
     distanceMeters?: number;
   }>;
   error?: {
@@ -31,7 +27,7 @@ interface RoutesApiResponse {
 function createRouteResult(
   durationSeconds: number,
   distanceMeters: number,
-  mode: 'transit' | 'driving'
+  mode: "transit" | "driving",
 ): RouteResult {
   return {
     durationMinutes: toMinutes(durationSeconds),
@@ -46,7 +42,7 @@ function createRouteResult(
  */
 function selectBestRoute(
   transitResult: { durationSeconds: number; distanceMeters: number } | null,
-  driveResult: { durationSeconds: number; distanceMeters: number } | null
+  driveResult: { durationSeconds: number; distanceMeters: number } | null,
 ): RouteResult | null {
   // No routes available at all
   if (!transitResult && !driveResult) {
@@ -55,30 +51,42 @@ function selectBestRoute(
 
   // Only driving available
   if (!transitResult && driveResult) {
-    return createRouteResult(driveResult.durationSeconds, driveResult.distanceMeters, 'driving');
+    return createRouteResult(driveResult.durationSeconds, driveResult.distanceMeters, "driving");
   }
 
   // Only transit available (shouldn't happen if we got here, but for type safety)
   if (transitResult && !driveResult) {
-    return createRouteResult(transitResult.durationSeconds, transitResult.distanceMeters, 'transit');
+    return createRouteResult(
+      transitResult.durationSeconds,
+      transitResult.distanceMeters,
+      "transit",
+    );
   }
 
   // Both available - compare
-  const transitMinutes = toMinutes(transitResult!.durationSeconds);
-  const driveMinutes = toMinutes(driveResult!.durationSeconds);
+  const transitMinutes = toMinutes(transitResult?.durationSeconds);
+  const driveMinutes = toMinutes(driveResult?.durationSeconds);
 
   // If transit is reasonable, prefer it
   if (transitMinutes <= TRANSIT_FALLBACK_THRESHOLD) {
-    return createRouteResult(transitResult!.durationSeconds, transitResult!.distanceMeters, 'transit');
+    return createRouteResult(
+      transitResult?.durationSeconds,
+      transitResult?.distanceMeters,
+      "transit",
+    );
   }
 
   // Transit is slow - use whichever is faster
   if (driveMinutes < transitMinutes) {
-    return createRouteResult(driveResult!.durationSeconds, driveResult!.distanceMeters, 'driving');
+    return createRouteResult(driveResult?.durationSeconds, driveResult?.distanceMeters, "driving");
   }
 
   // Transit is still faster or equal, use transit
-  return createRouteResult(transitResult!.durationSeconds, transitResult!.distanceMeters, 'transit');
+  return createRouteResult(
+    transitResult?.durationSeconds,
+    transitResult?.distanceMeters,
+    "transit",
+  );
 }
 
 /**
@@ -91,23 +99,23 @@ function selectBestRoute(
 async function callRoutesApi(
   origin: string,
   destination: string,
-  travelMode: 'TRANSIT' | 'DRIVE' | 'WALK',
-  departureTime?: Date
+  travelMode: "TRANSIT" | "DRIVE" | "WALK",
+  departureTime?: Date,
 ): Promise<{ durationSeconds: number; distanceMeters: number } | null> {
-  // Validate inputs
-  origin = validateAddress(origin, 'Origin');
-  destination = validateAddress(destination, 'Destination');
+  // Validate inputs (use local variables to avoid parameter reassignment)
+  const validOrigin = validateAddress(origin, "Origin");
+  const validDestination = validateAddress(destination, "Destination");
 
   const headers = {
-    'Content-Type': 'application/json',
-    'X-Goog-Api-Key': ROUTES_API_KEY,
-    'X-Goog-FieldMask': 'routes.duration,routes.distanceMeters',
+    "Content-Type": "application/json",
+    "X-Goog-Api-Key": ROUTES_API_KEY,
+    "X-Goog-FieldMask": "routes.duration,routes.distanceMeters",
   };
 
   // Build request body with optional traffic-aware routing
   const body: Record<string, unknown> = {
-    origin: { address: origin },
-    destination: { address: destination },
+    origin: { address: validOrigin },
+    destination: { address: validDestination },
     travelMode: travelMode,
   };
 
@@ -115,12 +123,12 @@ async function callRoutesApi(
   if (departureTime) {
     body.departureTime = departureTime.toISOString();
     // Enable traffic-aware routing for driving
-    if (travelMode === 'DRIVE') {
-      body.routingPreference = 'TRAFFIC_AWARE_OPTIMAL';
+    if (travelMode === "DRIVE") {
+      body.routingPreference = "TRAFFIC_AWARE_OPTIMAL";
     }
   }
 
-  const context = { origin, destination, travelMode };
+  const context = { origin: validOrigin, destination: validDestination, travelMode };
 
   // Set up timeout
   const controller = new AbortController();
@@ -128,7 +136,7 @@ async function callRoutesApi(
 
   try {
     const response = await fetch(ROUTES_API_ENDPOINT, {
-      method: 'POST',
+      method: "POST",
       headers,
       body: JSON.stringify(body),
       signal: controller.signal,
@@ -137,17 +145,17 @@ async function callRoutesApi(
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      const data = await response.json() as RoutesApiResponse;
+      const data = (await response.json()) as RoutesApiResponse;
       const isTransient = response.status >= 500;
       throw new RoutesApiError(
-        `Routes API error (${response.status}): ${data.error?.message || 'Unknown error'}`,
+        `Routes API error (${response.status}): ${data.error?.message || "Unknown error"}`,
         response.status,
         isTransient,
-        context
+        context,
       );
     }
 
-    const data = await response.json() as RoutesApiResponse;
+    const data = (await response.json()) as RoutesApiResponse;
 
     // No routes found - this is valid "no route" result, not an error
     if (!data.routes || data.routes.length === 0) {
@@ -177,21 +185,21 @@ async function callRoutesApi(
     }
 
     // Handle abort (timeout)
-    if (error instanceof Error && error.name === 'AbortError') {
+    if (error instanceof Error && error.name === "AbortError") {
       throw new RoutesApiError(
         `Routes API request timed out after ${ROUTES_API_TIMEOUT_MS}ms`,
         0,
         true, // Timeouts are transient
-        context
+        context,
       );
     }
 
     // Network errors are transient
     throw new RoutesApiError(
-      `Routes API network error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      `Routes API network error: ${error instanceof Error ? error.message : "Unknown error"}`,
       0,
       true,
-      context
+      context,
     );
   }
 }
@@ -210,39 +218,43 @@ async function callRoutesApi(
 export async function getTransitTime(
   origin: string,
   destination: string,
-  forceDrive: boolean = false,
-  departureTime?: Date
+  forceDrive = false,
+  departureTime?: Date,
 ): Promise<RouteResult | null> {
   // If force drive, skip transit entirely
   if (forceDrive) {
-    const driveResult = await callRoutesApi(origin, destination, 'DRIVE', departureTime);
+    const driveResult = await callRoutesApi(origin, destination, "DRIVE", departureTime);
     if (driveResult) {
-      return createRouteResult(driveResult.durationSeconds, driveResult.distanceMeters, 'driving');
+      return createRouteResult(driveResult.durationSeconds, driveResult.distanceMeters, "driving");
     }
     return null;
   }
 
   // Try TRANSIT first (departure time helps with schedule-based routing)
-  const transitResult = await callRoutesApi(origin, destination, 'TRANSIT', departureTime);
+  const transitResult = await callRoutesApi(origin, destination, "TRANSIT", departureTime);
 
   // If transit is available and reasonable, return it immediately
   if (transitResult) {
     const transitMinutes = toMinutes(transitResult.durationSeconds);
 
     if (transitMinutes <= TRANSIT_FALLBACK_THRESHOLD) {
-      return createRouteResult(transitResult.durationSeconds, transitResult.distanceMeters, 'transit');
+      return createRouteResult(
+        transitResult.durationSeconds,
+        transitResult.distanceMeters,
+        "transit",
+      );
     }
 
     // Transit takes too long, try driving to compare
-    const driveResult = await callRoutesApi(origin, destination, 'DRIVE', departureTime);
+    const driveResult = await callRoutesApi(origin, destination, "DRIVE", departureTime);
     return selectBestRoute(transitResult, driveResult);
   }
 
   // No transit route, try driving
-  const driveResult = await callRoutesApi(origin, destination, 'DRIVE', departureTime);
+  const driveResult = await callRoutesApi(origin, destination, "DRIVE", departureTime);
 
   if (driveResult) {
-    return createRouteResult(driveResult.durationSeconds, driveResult.distanceMeters, 'driving');
+    return createRouteResult(driveResult.durationSeconds, driveResult.distanceMeters, "driving");
   }
 
   // No route found at all
@@ -257,11 +269,8 @@ export async function getTransitTime(
  * @throws RoutesApiError on API failures
  * @returns Walking duration in minutes, or null if no walking route exists
  */
-export async function getWalkingTime(
-  origin: string,
-  destination: string
-): Promise<number | null> {
-  const result = await callRoutesApi(origin, destination, 'WALK');
+export async function getWalkingTime(origin: string, destination: string): Promise<number | null> {
+  const result = await callRoutesApi(origin, destination, "WALK");
 
   if (result) {
     return toMinutes(result.durationSeconds);

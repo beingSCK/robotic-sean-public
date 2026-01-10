@@ -5,9 +5,9 @@
  * Pass a token getter function to each API call.
  */
 
-import type { CalendarEvent, TransitEvent } from './types.ts';
+import type { CalendarEvent, TransitEvent } from "./types.ts";
 
-const CALENDAR_API_BASE = 'https://www.googleapis.com/calendar/v3';
+const CALENDAR_API_BASE = "https://www.googleapis.com/calendar/v3";
 
 /** Token getter function type - can be from Chrome auth or CLI auth */
 export type TokenGetter = () => Promise<string>;
@@ -17,7 +17,7 @@ export type TokenGetter = () => Promise<string>;
  */
 export async function fetchEvents(
   daysForward: number,
-  getToken: TokenGetter
+  getToken: TokenGetter,
 ): Promise<CalendarEvent[]> {
   const token = await getToken();
 
@@ -28,22 +28,19 @@ export async function fetchEvents(
   const params = new URLSearchParams({
     timeMin,
     timeMax,
-    singleEvents: 'true',
-    orderBy: 'startTime',
-    maxResults: '100',
+    singleEvents: "true",
+    orderBy: "startTime",
+    maxResults: "100",
     // Explicitly request fields we need - colorId is required for overlap detection
-    fields: 'items(id,summary,location,start,end,colorId,conferenceData,description)',
+    fields: "items(id,summary,location,start,end,colorId,conferenceData,description)",
   });
 
-  const response = await fetch(
-    `${CALENDAR_API_BASE}/calendars/primary/events?${params}`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    }
-  );
+  const response = await fetch(`${CALENDAR_API_BASE}/calendars/primary/events?${params}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  });
 
   if (!response.ok) {
     const error = await response.text();
@@ -59,28 +56,25 @@ export async function fetchEvents(
  */
 export async function insertTransitEvent(
   event: TransitEvent,
-  getToken: TokenGetter
+  getToken: TokenGetter,
 ): Promise<CalendarEvent> {
   const token = await getToken();
 
-  const response = await fetch(
-    `${CALENDAR_API_BASE}/calendars/primary/events`,
-    {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(event),
-    }
-  );
+  const response = await fetch(`${CALENDAR_API_BASE}/calendars/primary/events`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(event),
+  });
 
   if (!response.ok) {
     const error = await response.text();
     throw new Error(`Failed to insert event (${response.status}): ${error}`);
   }
 
-  return await response.json() as CalendarEvent;
+  return (await response.json()) as CalendarEvent;
 }
 
 /**
@@ -89,7 +83,7 @@ export async function insertTransitEvent(
  */
 export async function insertTransitEvents(
   events: TransitEvent[],
-  getToken: TokenGetter
+  getToken: TokenGetter,
 ): Promise<number> {
   let successCount = 0;
 
@@ -98,7 +92,7 @@ export async function insertTransitEvents(
       await insertTransitEvent(event, getToken);
       successCount++;
     } catch (error) {
-      console.error('Failed to insert event:', event.summary, error);
+      console.error("Failed to insert event:", event.summary, error);
     }
   }
 

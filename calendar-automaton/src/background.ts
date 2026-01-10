@@ -3,18 +3,14 @@
  * Handles OAuth flow so it persists even when popup closes.
  */
 
-import type { TokenData } from './types.ts';
-import { STORAGE_KEYS } from './types.ts';
-import {
-  OAUTH_CLIENT_ID,
-  OAUTH_CLIENT_SECRET,
-  OAUTH_SCOPES,
-} from './config.ts';
+import { OAUTH_CLIENT_ID, OAUTH_CLIENT_SECRET, OAUTH_SCOPES } from "./config.ts";
+import type { TokenData } from "./types.ts";
+import { STORAGE_KEYS } from "./types.ts";
 
-const TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token';
+const TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
 
 interface OAuthMessage {
-  type: 'START_OAUTH';
+  type: "START_OAUTH";
 }
 
 interface OAuthResponse {
@@ -36,13 +32,13 @@ function getRedirectUrl(): string {
 async function handleOAuth(): Promise<OAuthResponse> {
   const redirectUrl = getRedirectUrl();
 
-  const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
-  authUrl.searchParams.set('client_id', OAUTH_CLIENT_ID);
-  authUrl.searchParams.set('redirect_uri', redirectUrl);
-  authUrl.searchParams.set('response_type', 'code');
-  authUrl.searchParams.set('scope', OAUTH_SCOPES.join(' '));
-  authUrl.searchParams.set('access_type', 'offline');
-  authUrl.searchParams.set('prompt', 'consent');
+  const authUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+  authUrl.searchParams.set("client_id", OAUTH_CLIENT_ID);
+  authUrl.searchParams.set("redirect_uri", redirectUrl);
+  authUrl.searchParams.set("response_type", "code");
+  authUrl.searchParams.set("scope", OAUTH_SCOPES.join(" "));
+  authUrl.searchParams.set("access_type", "offline");
+  authUrl.searchParams.set("prompt", "consent");
 
   return new Promise((resolve) => {
     chrome.identity.launchWebAuthFlow(
@@ -52,39 +48,39 @@ async function handleOAuth(): Promise<OAuthResponse> {
       },
       async (responseUrl) => {
         if (chrome.runtime.lastError) {
-          console.error('OAuth error:', chrome.runtime.lastError.message);
+          console.error("OAuth error:", chrome.runtime.lastError.message);
           resolve({ success: false, error: chrome.runtime.lastError.message });
           return;
         }
 
         if (!responseUrl) {
-          resolve({ success: false, error: 'No redirect URL returned' });
+          resolve({ success: false, error: "No redirect URL returned" });
           return;
         }
 
         try {
           // Parse the authorization code
           const url = new URL(responseUrl);
-          const code = url.searchParams.get('code');
+          const code = url.searchParams.get("code");
           if (!code) {
-            const error = url.searchParams.get('error');
-            resolve({ success: false, error: error || 'No authorization code' });
+            const error = url.searchParams.get("error");
+            resolve({ success: false, error: error || "No authorization code" });
             return;
           }
 
           // Exchange code for tokens
-          console.log('Background: Exchanging code for tokens...');
+          console.log("Background: Exchanging code for tokens...");
           const response = await fetch(TOKEN_ENDPOINT, {
-            method: 'POST',
+            method: "POST",
             headers: {
-              'Content-Type': 'application/x-www-form-urlencoded',
+              "Content-Type": "application/x-www-form-urlencoded",
             },
             body: new URLSearchParams({
               code,
               client_id: OAUTH_CLIENT_ID,
               client_secret: OAUTH_CLIENT_SECRET,
               redirect_uri: redirectUrl,
-              grant_type: 'authorization_code',
+              grant_type: "authorization_code",
             }),
           });
 
@@ -103,28 +99,28 @@ async function handleOAuth(): Promise<OAuthResponse> {
 
           // Store tokens
           await chrome.storage.local.set({ [STORAGE_KEYS.OAUTH_TOKENS]: tokens });
-          console.log('Background: Tokens stored successfully');
+          console.log("Background: Tokens stored successfully");
 
           // Set flag so popup knows OAuth just completed
           await chrome.storage.local.set({ [STORAGE_KEYS.OAUTH_JUST_COMPLETED]: true });
 
           resolve({ success: true });
         } catch (err) {
-          console.error('Background: OAuth error:', err);
-          resolve({ success: false, error: err instanceof Error ? err.message : 'Unknown error' });
+          console.error("Background: OAuth error:", err);
+          resolve({ success: false, error: err instanceof Error ? err.message : "Unknown error" });
         }
-      }
+      },
     );
   });
 }
 
 // Listen for messages from popup
 chrome.runtime.onMessage.addListener((message: OAuthMessage, _sender, sendResponse) => {
-  if (message.type === 'START_OAUTH') {
-    console.log('Background: Received START_OAUTH message');
+  if (message.type === "START_OAUTH") {
+    console.log("Background: Received START_OAUTH message");
     handleOAuth().then(sendResponse);
     return true; // Keep channel open for async response
   }
 });
 
-console.log('Background service worker loaded');
+console.log("Background service worker loaded");
