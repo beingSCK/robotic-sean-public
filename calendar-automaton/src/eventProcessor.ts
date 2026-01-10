@@ -539,6 +539,7 @@ export async function calculateTransitEvents(
 
     let previousLocation = settings.homeAddress;
     let previousLocationName = 'Home';
+    let previousEventEnd: Date | null = null; // Track when previous event ends for departure time
 
     // Process each event in order
     for (const event of dayEvents) {
@@ -558,6 +559,9 @@ export async function calculateTransitEvents(
       const eventStart = event.start.dateTime;
       const timeZone = event.start.timeZone || DEFAULT_TIMEZONE;
 
+      // Pre-compute event start for departure time calculation
+      const eventStartDate = parseDateTime(eventStart);
+
       if (isSameLocation(location, previousLocation)) {
         logSkip(onProgress, eventName, `same location as ${previousLocationName}`);
       } else {
@@ -567,7 +571,13 @@ export async function calculateTransitEvents(
             isLowTransitLocation(previousLocation, settings.lowTransitLocations) ||
             isLowTransitLocation(location, settings.lowTransitLocations);
 
-          const transitResult = await getTransitTime(previousLocation, location, forceDrive);
+          // Compute departure time for traffic-aware routing
+          // If we have a previous event end time, use that; otherwise estimate from event start
+          const departureTime = previousEventEnd
+            ? previousEventEnd
+            : new Date(eventStartDate.getTime() - 60 * MILLISECONDS_PER_MINUTE);
+
+          const transitResult = await getTransitTime(previousLocation, location, forceDrive, departureTime);
 
           if (!transitResult) {
             logSkip(onProgress, eventName, 'no route found');
@@ -587,7 +597,7 @@ export async function calculateTransitEvents(
               const effectiveMode = durationCheck.mode;
               const effectiveDuration = durationCheck.walkMinutes ?? transitResult.durationMinutes;
 
-              const eventStartDate = parseDateTime(eventStart);
+              // eventStartDate already computed above for departure time
               const transitStartTime = new Date(
                 eventStartDate.getTime() - effectiveDuration * MILLISECONDS_PER_MINUTE
               );
@@ -622,6 +632,10 @@ export async function calculateTransitEvents(
       // SINGLE state update at end of loop
       previousLocation = location;
       previousLocationName = getLocationName(location);
+      // Track when this event ends for next iteration's departure time
+      if (event.end?.dateTime) {
+        previousEventEnd = parseDateTime(event.end.dateTime);
+      }
     }
 
     // Add return-home transit after last event (if not already home)
@@ -632,6 +646,7 @@ export async function calculateTransitEvents(
 
       if (lastEvent?.end?.dateTime) {
         const returnLabel = 'Return home';
+        const lastEventEnd = parseDateTime(lastEvent.end.dateTime);
         let returnTransit: RouteResult | null;
         try {
           // Check if origin or destination is a low-transit location
@@ -639,7 +654,8 @@ export async function calculateTransitEvents(
             isLowTransitLocation(previousLocation, settings.lowTransitLocations) ||
             isLowTransitLocation(settings.homeAddress, settings.lowTransitLocations);
 
-          returnTransit = await getTransitTime(previousLocation, settings.homeAddress, forceDrive);
+          // Use last event end as departure time for traffic-aware routing
+          returnTransit = await getTransitTime(previousLocation, settings.homeAddress, forceDrive, lastEventEnd);
         } catch (error) {
           if (error instanceof RoutesApiError) {
             logSkip(onProgress, returnLabel, `API error: ${error.message}`);
@@ -665,7 +681,7 @@ export async function calculateTransitEvents(
             const effectiveMode = durationCheck.mode;
             const effectiveDuration = durationCheck.walkMinutes ?? returnTransit.durationMinutes;
 
-            const lastEventEnd = parseDateTime(lastEvent.end.dateTime);
+            // lastEventEnd already computed above for departure time
             const returnEndTime = new Date(
               lastEventEnd.getTime() + effectiveDuration * MILLISECONDS_PER_MINUTE
             );

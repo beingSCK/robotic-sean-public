@@ -85,11 +85,14 @@ function selectBestRoute(
  * Call Google Routes API to get travel time.
  * Throws RoutesApiError on API failures.
  * Returns null if no valid route exists (different from API failure).
+ *
+ * @param departureTime Optional departure time for traffic-aware routing (DRIVE mode)
  */
 async function callRoutesApi(
   origin: string,
   destination: string,
-  travelMode: 'TRANSIT' | 'DRIVE' | 'WALK'
+  travelMode: 'TRANSIT' | 'DRIVE' | 'WALK',
+  departureTime?: Date
 ): Promise<{ durationSeconds: number; distanceMeters: number } | null> {
   // Validate inputs
   origin = validateAddress(origin, 'Origin');
@@ -101,11 +104,21 @@ async function callRoutesApi(
     'X-Goog-FieldMask': 'routes.duration,routes.distanceMeters',
   };
 
-  const body = {
+  // Build request body with optional traffic-aware routing
+  const body: Record<string, unknown> = {
     origin: { address: origin },
     destination: { address: destination },
     travelMode: travelMode,
   };
+
+  // Add departure time for traffic-aware routing
+  if (departureTime) {
+    body.departureTime = departureTime.toISOString();
+    // Enable traffic-aware routing for driving
+    if (travelMode === 'DRIVE') {
+      body.routingPreference = 'TRAFFIC_AWARE_OPTIMAL';
+    }
+  }
 
   const context = { origin, destination, travelMode };
 
@@ -190,25 +203,27 @@ async function callRoutesApi(
  * @param origin Starting address
  * @param destination Ending address
  * @param forceDrive If true, skip transit and only use driving mode
+ * @param departureTime Optional departure time for traffic-aware routing
  * @throws RoutesApiError on API failures (can be caught and handled by caller)
  * @returns RouteResult or null if no route exists
  */
 export async function getTransitTime(
   origin: string,
   destination: string,
-  forceDrive: boolean = false
+  forceDrive: boolean = false,
+  departureTime?: Date
 ): Promise<RouteResult | null> {
   // If force drive, skip transit entirely
   if (forceDrive) {
-    const driveResult = await callRoutesApi(origin, destination, 'DRIVE');
+    const driveResult = await callRoutesApi(origin, destination, 'DRIVE', departureTime);
     if (driveResult) {
       return createRouteResult(driveResult.durationSeconds, driveResult.distanceMeters, 'driving');
     }
     return null;
   }
 
-  // Try TRANSIT first
-  const transitResult = await callRoutesApi(origin, destination, 'TRANSIT');
+  // Try TRANSIT first (departure time helps with schedule-based routing)
+  const transitResult = await callRoutesApi(origin, destination, 'TRANSIT', departureTime);
 
   // If transit is available and reasonable, return it immediately
   if (transitResult) {
@@ -219,12 +234,12 @@ export async function getTransitTime(
     }
 
     // Transit takes too long, try driving to compare
-    const driveResult = await callRoutesApi(origin, destination, 'DRIVE');
+    const driveResult = await callRoutesApi(origin, destination, 'DRIVE', departureTime);
     return selectBestRoute(transitResult, driveResult);
   }
 
   // No transit route, try driving
-  const driveResult = await callRoutesApi(origin, destination, 'DRIVE');
+  const driveResult = await callRoutesApi(origin, destination, 'DRIVE', departureTime);
 
   if (driveResult) {
     return createRouteResult(driveResult.durationSeconds, driveResult.distanceMeters, 'driving');
