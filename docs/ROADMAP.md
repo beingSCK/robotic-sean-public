@@ -10,8 +10,8 @@ Current status and next steps for the Calendar Automaton family - intelligent ca
 
 | Project | Status | Location |
 |---------|--------|----------|
-| **Calendar Automaton** | Active - feature parity, then publish | `calendar-automaton/` |
-| Calendar Transit CLI | Complete (proof-of-concept) | `archive/calendar-cli-python/` |
+| **Calendar Automaton** | Active - feature parity, then publish | `.` (this repo) |
+| Calendar Transit CLI | Complete (proof-of-concept) | `../_past-projects/2025-calendar-cli/` |
 
 **Current focus:** Calendar Automaton (Chrome Extension) to Web Store publish to LinkedIn post.
 
@@ -52,8 +52,8 @@ These items are nice-to-have polish, not blockers for initial publish:
 
 **Remaining:**
 - [ ] Stay events + dynamic home location
-- [ ] Traffic-aware routing (BEST_GUESS + PESSIMISTIC blending)
-- [ ] Blended traffic models
+- [x] Traffic-aware routing (departure time sent to Routes API) *(2026-01-10)*
+- [ ] Blended traffic models (BEST_GUESS + PESSIMISTIC blending)
 
 ### UX Polish (After Publish)
 

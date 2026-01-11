@@ -1,72 +1,69 @@
 # HANDOFF - Calendar Automaton
-_Last updated: 2026-01-10_
+_Last updated: 2026-01-11_
 
 ## Session Recap
 
-Morning session focused on two things: (1) Added traffic-aware routing - Routes API now gets departure times for accurate travel estimates. (2) Set up testing infrastructure - added Biome linter, created project template, but didn't write actual tests yet.
-
-Pivot: Got absorbed in infrastructure (linting, project template) instead of writing tests. Good foundation, but the test is still unwritten.
+Major consolidation session. Cleaned up vestigial directory structure from the Python CLI migration, made the codebase self-contained, and improved documentation for future agent effectiveness.
 
 ## What Was Implemented
 
-**Traffic-aware routing:**
-- `transitCalculator.ts`: Added `departureTime?: Date` param to `callRoutesApi()` and `getTransitTime()`
-- `eventProcessor.ts`: Track `previousEventEnd` through event loop, compute departure time for each trip
+**Directory flattening:**
+- Moved all files from `calendar-automaton/` up to repo root
+- Git tracked as renames (history preserved)
+- Commit: `d7604b4`
+
+**Removed _past-projects dependency:**
+- CLI test runner now reads tokens from local `cli-tokens.json`
+- No more cross-directory coupling to archived Python CLI
+- Commit: `94aa67f`
+
+**Documentation consolidation:**
+- Merged two CLAUDE.md files into one comprehensive guide
+- Added "Linting Philosophy" section explaining WHY rules are set
+- Fixed stale path references in docs/ROADMAP.md and docs/project-phases.md
+- Updated feature status (traffic-aware routing marked complete)
+
+## Prior Session Work (2026-01-10)
+
+**Traffic-aware routing** (already on this branch):
+- Routes API now receives departure times for accurate estimates
 - Commit: `5c74482`
 
-**Testing infrastructure:**
-- Added `@biomejs/biome` for linting/formatting
-- Created `_grab-bag/project-template/` for future projects
-- Commit: `783e066`
+**First unit test:**
+- `src/eventProcessor.test.ts` with 8 test cases for `shouldSkipEvent()`
+- Commit: `5044af3`
 
-**Architecture decision for testing:**
-- `src/core/` - Pure functions (easily testable) - START HERE
-- `src/services/` - External adapters (mockable later)
-- `tests/fixtures/` - Sample calendar events
+## Current State
 
-## Ideas Considered (but deferred)
-
-- **Refactor for dependency injection**: Would make `getTransitTime()` more testable, but adds complexity. Defer until first test proves the pattern.
-- **Integration tests with real API**: Too slow/flaky for now. Unit tests first.
-- **Ship without tests**: Could merge traffic-aware routing to main now, but committed to "tests before merge" discipline.
-
-## Current Direction
-
-Write the first unit test to prove the testing setup works. `shouldSkipEvent()` is the easiest target: it's already a pure function that takes an event and returns a boolean. No mocking needed.
-
-The hypothesis: Once one test exists, the pattern is established and more tests are easy to add.
+Branch `feature/traffic-aware-routing` is 4 commits ahead of main:
+1. Traffic-aware routing
+2. First unit test
+3. Directory flattening
+4. CLI auth self-contained
+5. Documentation consolidation (pending commit)
 
 ## Recommended Next Action
 
-**Write `shouldSkipEvent.test.ts`**
+**Merge to main and push.** The feature branch has:
+- Working traffic-aware routing
+- Unit tests passing
+- Clean directory structure
+- Self-contained codebase (no external dependencies)
 
-1. Read Bun's test documentation (you haven't used `bun:test` before)
-2. Create `tests/unit/shouldSkipEvent.test.ts`
-3. Create `tests/fixtures/sample-events.ts` with test cases:
-   - Event with "[t]" in title (should skip)
-   - All-day event (should skip)
-   - Normal event (should not skip)
-   - Event in the past (should skip)
-4. Run `bun test` to verify
-
-Why this specifically:
-- Pure function, no external dependencies
-- Quick win that proves setup works
-- Builds confidence for harder tests later
+After merge, the next priority is Chrome Web Store publish.
 
 ## Alternatives
 
-- **Ship traffic-aware routing first**: Skip tests, merge to main, test manually in Arc. Faster to ship, but breaks the "tests before merge" commitment.
-- **Tackle dependency injection**: Refactor `getTransitTime()` to accept a `routesApiClient` parameter. Harder, but sets up for integration tests later.
-- **Set up GitHub Actions CI**: Could do this in parallel with writing tests. Runs on PRs, enforces the discipline.
+- **Add more unit tests** before merge (diminishing returns, core is tested)
+- **Set up GitHub Actions CI** (nice but not blocking)
+- **Implement blended traffic models** (feature work, can wait)
 
 ## Commands Reference
 
 ```bash
 bun install          # Install dependencies
-bun run build        # Build extension
-bun run lint         # Check linting
-bun run lint:fix     # Auto-fix lint issues
+bun run build        # Build extension to dist/
+bun test             # Run unit tests
+bun run test         # CLI integration test (needs cli-tokens.json)
 bun run check        # Full check (types + lint)
-bun test             # Run tests (once tests exist)
 ```

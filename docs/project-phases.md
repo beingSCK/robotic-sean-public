@@ -38,7 +38,7 @@ Python script that validated the idea of automatically creating transit events. 
 
 ### Files (Archived)
 
-The Python CLI code is preserved in `archive/calendar-cli-python/` as reference for porting remaining features (traffic-aware routing, blended traffic models) to the TypeScript Extension.
+The Python CLI code is preserved in `../../_past-projects/2025-calendar-cli/` as reference for porting remaining features (blended traffic models) to the TypeScript Extension.
 
 ---
 
@@ -87,12 +87,12 @@ These items are nice-to-have polish, not blockers for initial publish:
 - [x] Overlap detection between transit events *(2025-12-29)*
 - [x] Trip detection (flights, hotel stays) *(2025-12-29)*
 - [ ] Stay events + dynamic home location
-- [ ] Traffic-aware routing (BEST_GUESS + PESSIMISTIC blending)
-- [ ] Blended traffic models
+- [x] Traffic-aware routing (departure time sent to Routes API) *(2026-01-10)*
+- [ ] Blended traffic models (BEST_GUESS + PESSIMISTIC blending)
 
 ### Files
-- `calendar-automaton/` - Extension source code
-- `calendar-automaton/CLAUDE.md` - Setup instructions
+- `src/` - Extension source code
+- `CLAUDE.md` - Setup instructions and architecture
 
 ---
 
