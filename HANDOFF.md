@@ -3,60 +3,63 @@ _Last updated: 2026-01-11_
 
 ## Session Recap
 
-Major consolidation session. Cleaned up vestigial directory structure from the Python CLI migration, made the codebase self-contained, and improved documentation for future agent effectiveness.
+Planned to clean up organizational debt from Python CLI migration. Executed successfully: flattened directory structure, removed external dependencies, consolidated documentation. Uncovered TypeScript strict mode errors that need fixing before merge to main.
 
 ## What Was Implemented
 
-**Directory flattening:**
-- Moved all files from `calendar-automaton/` up to repo root
-- Git tracked as renames (history preserved)
-- Commit: `d7604b4`
+**Directory consolidation (Commit: `d7604b4`):**
+- Flattened `calendar-automaton/` up to repo root
+- Git tracked as renames, history preserved
 
-**Removed _past-projects dependency:**
-- CLI test runner now reads tokens from local `cli-tokens.json`
-- No more cross-directory coupling to archived Python CLI
-- Commit: `94aa67f`
+**Self-contained auth (Commit: `94aa67f`):**
+- CLI test runner now reads `cli-tokens.json` locally
+- Removed dependency on `_past-projects/` archived code
 
-**Documentation consolidation:**
-- Merged two CLAUDE.md files into one comprehensive guide
-- Added "Linting Philosophy" section explaining WHY rules are set
-- Fixed stale path references in docs/ROADMAP.md and docs/project-phases.md
-- Updated feature status (traffic-aware routing marked complete)
+**Documentation cleanup (Commit: `2f705d7`):**
+- Merged project and repo CLAUDE.md files
+- Added "Linting Philosophy" section
+- Fixed stale paths in docs/ROADMAP.md and docs/project-phases.md
 
-## Prior Session Work (2026-01-10)
+## Ideas Considered (but deferred)
 
-**Traffic-aware routing** (already on this branch):
-- Routes API now receives departure times for accurate estimates
-- Commit: `5c74482`
+**Add GitHub Actions CI:**
+Discussed setting up automated testing on push. Deferred because current workflow (manual `bun run check` before commits) is working fine for solo development. Revisit after Chrome Web Store publish when project becomes public.
 
-**First unit test:**
-- `src/eventProcessor.test.ts` with 8 test cases for `shouldSkipEvent()`
-- Commit: `5044af3`
+**Implement blended traffic models:**
+Feature work from original Python CLI. Low priority until core extension ships and gets real usage data to validate the complexity is needed.
 
-## Current State
+## Current Direction
 
-Branch `feature/traffic-aware-routing` is 4 commits ahead of main:
-1. Traffic-aware routing
-2. First unit test
-3. Directory flattening
-4. CLI auth self-contained
-5. Documentation consolidation (pending commit)
+**Get to Chrome Web Store publish.** The extension has working features (traffic-aware routing, event skipping logic, unit tests) but needs TypeScript hygiene before it's merge-ready. Focus is on runtime validation over type assertions to catch bugs from external data (Chrome storage, APIs).
 
 ## Recommended Next Action
 
-**Merge to main and push.** The feature branch has:
-- Working traffic-aware routing
-- Unit tests passing
-- Clean directory structure
-- Self-contained codebase (no external dependencies)
+**Fix TypeScript strict mode errors using Zod validation.**
 
-After merge, the next priority is Chrome Web Store publish.
+Why this is highest priority:
+- Blocks merge to main
+- Establishes pattern for runtime validation (Sean's preference)
+- Prevents silent failures from bad external data
+
+Plan exists at `~/.claude/plans/abstract-tumbling-yeti.md` with step-by-step implementation:
+1. Install Zod
+2. Create schemas in `src/types.ts`
+3. Replace `as` casts with `.safeParse()` validation
+4. Add null checks in math operations
+5. Verify with `bun run check`
+
+After TypeScript errors fixed:
+1. Add type safety preference to `~/.claude/CLAUDE.md`
+2. Merge feature branch to main
+3. Follow Chrome Web Store publish checklist
 
 ## Alternatives
 
-- **Add more unit tests** before merge (diminishing returns, core is tested)
-- **Set up GitHub Actions CI** (nice but not blocking)
-- **Implement blended traffic models** (feature work, can wait)
+**Revert uncommitted changes and merge as-is:**
+`popup/popup.ts` has partial fix attempt that's incorrect. Could revert, merge current commits, and fix TypeScript errors on main branch instead. Makes sense if you want to ship incremental progress, but mixing concerns (org cleanup + type safety) in one branch is fine for solo dev.
+
+**Add more unit tests before merge:**
+Diminishing returns. `shouldSkipEvent()` has 8 test cases covering core logic. Integration testing happens in Chrome anyway. Add more tests after publish when usage patterns emerge.
 
 ## Commands Reference
 
@@ -67,3 +70,17 @@ bun test             # Run unit tests
 bun run test         # CLI integration test (needs cli-tokens.json)
 bun run check        # Full check (types + lint)
 ```
+
+## Current State
+
+**Branch:** `feature/traffic-aware-routing` (4 commits ahead of main, pushed to origin)
+
+**Uncommitted changes:**
+- `popup/popup.ts` has partial fix attempt (should revert or complete)
+
+**TypeScript errors:**
+- Chrome storage data needs validation before use
+- Auth token data needs validation
+- Some possibly-undefined values in math operations
+
+Plan file: `~/.claude/plans/abstract-tumbling-yeti.md`
