@@ -1,8 +1,11 @@
 /**
  * CLI Auth - File-based OAuth token management for CLI testing
  *
- * Reads tokens from the archived Python CLI's token.json file, enabling the test runner
- * to use the same authenticated Google account without Chrome extension context.
+ * Reads tokens from cli-tokens.json in the project root, enabling the test runner
+ * to use Google Calendar without Chrome extension context.
+ *
+ * Setup: Copy token.json from a previous OAuth flow (e.g., _past-projects/2025-calendar-cli/)
+ * to cli-tokens.json in the project root, or run the extension to authenticate first.
  */
 
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
@@ -10,12 +13,9 @@ import { dirname, join } from "node:path";
 
 const TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
 
-// Path to archived Python CLI's token.json (relative to this file's location)
-const CLI_ARCHIVE_DIR = join(
-  dirname(import.meta.path),
-  "../../../../_past-projects/2025-calendar-cli",
-);
-const TOKEN_FILE = join(CLI_ARCHIVE_DIR, "token.json");
+// Path to CLI tokens file (project root)
+const PROJECT_ROOT = join(dirname(import.meta.path), "../..");
+const TOKEN_FILE = join(PROJECT_ROOT, "cli-tokens.json");
 
 interface PythonTokenData {
   token: string;
@@ -33,7 +33,7 @@ interface PythonTokenData {
 function readTokenFile(): PythonTokenData {
   if (!existsSync(TOKEN_FILE)) {
     throw new Error(
-      `Token file not found at ${TOKEN_FILE}\nPlease run the archived Python CLI first to authenticate:\n  cd _past-projects/2025-calendar-cli && python add_transit.py`,
+      `Token file not found at ${TOKEN_FILE}\n\nTo set up CLI tokens:\n  1. Copy token.json from a previous OAuth flow to cli-tokens.json\n  2. Or run the Chrome extension first to authenticate`,
     );
   }
 

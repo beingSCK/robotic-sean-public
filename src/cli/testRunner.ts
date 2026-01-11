@@ -59,39 +59,9 @@ Examples:
   process.exit(0);
 }
 
-// Load settings (from Python CLI's config or use defaults)
+// Load settings from config.ts (same as extension) with CLI overrides
 async function loadSettings(): Promise<UserSettings> {
   const settings: UserSettings = { ...DEFAULT_SETTINGS };
-
-  // Try to load settings from archived Python CLI config
-  try {
-    const configPath = new URL(
-      "../../../../_past-projects/2025-calendar-cli/config.json",
-      import.meta.url,
-    );
-    const configText = await Bun.file(configPath).text();
-    const config = JSON.parse(configText);
-
-    // Home address
-    if (config.user?.home_address) {
-      settings.homeAddress = config.user.home_address;
-    } else if (config.home_address) {
-      settings.homeAddress = config.home_address;
-    }
-
-    // Low-transit locations (check both new and legacy config keys)
-    const lowTransit = config.user?.low_transit_locations || config.user?.car_only_locations;
-    if (lowTransit && Array.isArray(lowTransit)) {
-      settings.lowTransitLocations = lowTransit;
-    }
-
-    // Home airports (for trip detection)
-    if (config.user?.home_airports && Array.isArray(config.user.home_airports)) {
-      settings.homeAirports = config.user.home_airports;
-    }
-  } catch {
-    // Config file not found or invalid - use defaults
-  }
 
   // Command line overrides
   if (values.home) {
@@ -221,7 +191,7 @@ async function main() {
 
   if (!settings.homeAddress) {
     console.error("Error: Home address not configured.");
-    console.error("Set it in _past-projects/2025-calendar-cli/config.json or use --home flag.");
+    console.error("Set it in src/config.ts (DEFAULT_SETTINGS.homeAddress) or use --home flag.");
     process.exit(1);
   }
 
