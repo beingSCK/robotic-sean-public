@@ -113,22 +113,22 @@ describe("getTransitTime", () => {
   });
 });
 
-describe("getTransitTime - transit-mode feature", () => {
-  // TODO(transit-mode): Add tests after implementing TransitMode enum
-  // These tests will verify the new mode parameter:
+describe("getTransitTime - transit preference feature", () => {
+  // TODO(transit-preference): Add tests after implementing TransitPreference
+  // These tests will verify the new preference parameter:
   // - 'always_driving': skip transit, only call DRIVE API
   // - 'always_transit': skip driving, only call TRANSIT API
   // - 'default': current smart fallback logic
 
-  test.todo("mode='always_driving': only calls DRIVE API", () => {
+  test.todo("preference='always_driving': only calls DRIVE API", () => {
     expect(true).toBe(true);
   });
 
-  test.todo("mode='always_transit': only calls TRANSIT API", () => {
+  test.todo("preference='always_transit': only calls TRANSIT API", () => {
     expect(true).toBe(true);
   });
 
-  test.todo("mode='default': uses smart fallback logic", () => {
+  test.todo("preference='default': uses smart fallback logic", () => {
     expect(true).toBe(true);
   });
 });

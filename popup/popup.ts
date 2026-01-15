@@ -18,6 +18,7 @@ import type { TransitEvent, UserSettings } from "../src/types.ts";
 // DOM Elements
 let homeAddressInput: HTMLInputElement;
 let daysForwardInput: HTMLInputElement;
+let transitPreferenceSelect: HTMLSelectElement;
 let saveSettingsBtn: HTMLButtonElement;
 let scanBtn: HTMLButtonElement;
 let statusMessage: HTMLDivElement;
@@ -272,11 +273,13 @@ async function handleDisconnect() {
 async function handleSaveSettings() {
   const homeAddress = homeAddressInput.value.trim();
   const daysForward = Number.parseInt(daysForwardInput.value, 10) || 7;
+  const transitPreference = transitPreferenceSelect.value as UserSettings["transitPreference"];
 
   currentSettings = {
     ...currentSettings,
     homeAddress,
     daysForward,
+    transitPreference,
   };
 
   await saveSettings(currentSettings);
@@ -297,6 +300,7 @@ async function init() {
   // Get DOM elements
   homeAddressInput = document.getElementById("home-address") as HTMLInputElement;
   daysForwardInput = document.getElementById("days-forward") as HTMLInputElement;
+  transitPreferenceSelect = document.getElementById("transit-preference") as HTMLSelectElement;
   saveSettingsBtn = document.getElementById("save-settings") as HTMLButtonElement;
   scanBtn = document.getElementById("scan-btn") as HTMLButtonElement;
   statusMessage = document.getElementById("status-message") as HTMLDivElement;
@@ -315,6 +319,7 @@ async function init() {
   currentSettings = await loadSettings();
   homeAddressInput.value = currentSettings.homeAddress;
   daysForwardInput.value = currentSettings.daysForward.toString();
+  transitPreferenceSelect.value = currentSettings.transitPreference;
 
   // Open settings if home address is not set
   if (!currentSettings.homeAddress) {
@@ -334,9 +339,10 @@ async function init() {
   doneBtn.addEventListener("click", resetUI);
   disconnectBtn.addEventListener("click", handleDisconnect);
 
-  // Save settings on input change (debounced via blur)
+  // Save settings on input change (debounced via blur, or immediate for select)
   homeAddressInput.addEventListener("blur", handleSaveSettings);
   daysForwardInput.addEventListener("blur", handleSaveSettings);
+  transitPreferenceSelect.addEventListener("change", handleSaveSettings);
 
   // Check if OAuth just completed (background worker sets this flag)
   const oauthJustCompleted = await onAuthComplete();

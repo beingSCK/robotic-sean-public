@@ -15,6 +15,7 @@ const testSettings: UserSettings = {
   homeAddress: "123 Home St, New York, NY",
   daysForward: 7,
   transitColorId: "11", // Tomato color
+  transitPreference: "default",
 };
 
 // Helper to create a minimal valid event (one that should NOT be skipped)

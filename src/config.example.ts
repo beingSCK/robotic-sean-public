@@ -29,6 +29,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   homeAddress: "",
   daysForward: 7,
   transitColorId: "11", // Tomato - matches our CLI tool
+  transitPreference: "default", // Smart mode - prefer transit, fall back if > 80 min
 };
 
 // Video call URL patterns to skip
