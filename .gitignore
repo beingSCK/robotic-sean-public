@@ -1,15 +1,44 @@
-# Large data files in investment-db-experiments
-investment-db-experiments/*.mbox
-investment-db-experiments/*.zip
-investment-db-experiments/Takeout/
-investment-db-experiments/Takeout 2/
+# Dependencies
+node_modules
+
+# Build output
+out
+dist
+*.tgz
+
+# Secrets - contains API keys and OAuth credentials
+# Copy config.example.ts to config.ts and fill in your values
+src/config.ts
+
+# CLI tokens (OAuth for test runner)
+cli-tokens.json
+
+# Code coverage
+coverage
+*.lcov
+
+# Logs
+logs
+_.log
+report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
+
+# Environment variables
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+
+# Caches
+.eslintcache
+.cache
+*.tsbuildinfo
+
+# IDE
+.idea
 
 # macOS
 .DS_Store
 
-# Other files to ignore
-Recovery codes github.txt
-alias-for-sck-local-dropbox
-
-# Work journal (private session notes)
-work-journal/
+# Finder alias (intentional - used for Dropbox drag-and-drop)
+# alias-for-sck-local-dropbox is NOT ignored, it's tracked

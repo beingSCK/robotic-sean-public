@@ -5,22 +5,32 @@
  * The actual OAuth flow runs in background.ts (must be in service worker to persist).
  */
 
-import type { TokenData } from './types.ts';
-import { STORAGE_KEYS } from './types.ts';
-import {
-  OAUTH_CLIENT_ID,
-  OAUTH_CLIENT_SECRET,
-} from './config.ts';
+import { OAUTH_CLIENT_ID, OAUTH_CLIENT_SECRET } from "./config.ts";
+import type { TokenData } from "./types.ts";
+import { STORAGE_KEYS, TokenDataSchema } from "./types.ts";
 
-const TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token';
+const TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
 
 /**
  * Get stored tokens from chrome.storage.local.
+ * Uses Zod schema validation to ensure token data integrity.
  */
 async function getStoredTokens(): Promise<TokenData | null> {
   return new Promise((resolve) => {
     chrome.storage.local.get([STORAGE_KEYS.OAUTH_TOKENS], (result) => {
-      resolve(result[STORAGE_KEYS.OAUTH_TOKENS] || null);
+      const rawData = result[STORAGE_KEYS.OAUTH_TOKENS];
+      if (!rawData) {
+        resolve(null);
+        return;
+      }
+      // Validate with Zod schema
+      const parsed = TokenDataSchema.safeParse(rawData);
+      if (parsed.success) {
+        resolve(parsed.data);
+      } else {
+        console.warn("Invalid token data in storage:", parsed.error);
+        resolve(null);
+      }
     });
   });
 }
@@ -77,7 +87,7 @@ export async function clearAuthCompleteFlag(): Promise<void> {
  */
 async function requestOAuthFromBackground(): Promise<void> {
   return new Promise((resolve, reject) => {
-    chrome.runtime.sendMessage({ type: 'START_OAUTH' }, (response) => {
+    chrome.runtime.sendMessage({ type: "START_OAUTH" }, (response) => {
       if (chrome.runtime.lastError) {
         reject(new Error(chrome.runtime.lastError.message));
         return;
@@ -85,7 +95,7 @@ async function requestOAuthFromBackground(): Promise<void> {
       if (response?.success) {
         resolve();
       } else {
-        reject(new Error(response?.error || 'OAuth failed'));
+        reject(new Error(response?.error || "OAuth failed"));
       }
     });
   });
@@ -96,15 +106,15 @@ async function requestOAuthFromBackground(): Promise<void> {
  */
 async function refreshAccessToken(refreshToken: string): Promise<TokenData> {
   const response = await fetch(TOKEN_ENDPOINT, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
+      "Content-Type": "application/x-www-form-urlencoded",
     },
     body: new URLSearchParams({
       refresh_token: refreshToken,
       client_id: OAUTH_CLIENT_ID,
       client_secret: OAUTH_CLIENT_SECRET,
-      grant_type: 'refresh_token',
+      grant_type: "refresh_token",
     }),
   });
 
@@ -127,18 +137,18 @@ async function refreshAccessToken(refreshToken: string): Promise<TokenData> {
  * If no tokens exist, delegates to background worker for OAuth.
  */
 export async function getAccessToken(): Promise<string> {
-  console.log('getAccessToken called');
+  console.log("getAccessToken called");
   let tokens = await getStoredTokens();
-  console.log('Stored tokens:', tokens ? 'found' : 'none');
+  console.log("Stored tokens:", tokens ? "found" : "none");
 
   // If no tokens, request OAuth from background worker
   if (!tokens) {
-    console.log('No tokens, requesting OAuth from background...');
+    console.log("No tokens, requesting OAuth from background...");
     await requestOAuthFromBackground();
-    console.log('OAuth completed, fetching tokens...');
+    console.log("OAuth completed, fetching tokens...");
     tokens = await getStoredTokens();
     if (!tokens) {
-      throw new Error('OAuth completed but no tokens found');
+      throw new Error("OAuth completed but no tokens found");
     }
     return tokens.access_token;
   }
@@ -151,12 +161,12 @@ export async function getAccessToken(): Promise<string> {
         await storeTokens(tokens);
         return tokens.access_token;
       } catch (error) {
-        console.error('Token refresh failed, re-authenticating:', error);
+        console.error("Token refresh failed, re-authenticating:", error);
         // Refresh failed, request fresh OAuth from background
         await requestOAuthFromBackground();
         tokens = await getStoredTokens();
         if (!tokens) {
-          throw new Error('OAuth completed but no tokens found');
+          throw new Error("OAuth completed but no tokens found");
         }
         return tokens.access_token;
       }
@@ -165,7 +175,7 @@ export async function getAccessToken(): Promise<string> {
       await requestOAuthFromBackground();
       tokens = await getStoredTokens();
       if (!tokens) {
-        throw new Error('OAuth completed but no tokens found');
+        throw new Error("OAuth completed but no tokens found");
       }
       return tokens.access_token;
     }

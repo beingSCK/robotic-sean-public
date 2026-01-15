@@ -1,79 +1,122 @@
-# CLAUDE.md
+# CLAUDE.md - Calendar Automaton
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Chrome extension for intelligent calendar management. Currently creates transit events automatically; designed to expand to prep time, buffer events, and other derived calendar entries.
 
-## Purpose
+**Philosophy:** "Complete before expanding" - see `../_meta/docs/FOUNDATIONS.md` for full principles.
 
-This is a learning projects hub for AI-assisted development work. Projects here are works-in-progress that will graduate to their own repos when mature enough.
-
-**Philosophy:** "Complete before expanding" - finish small tools rather than accumulate half-built systems.
-
-See:
-- `docs/ROADMAP.md` - Overall goals, project status, and philosophy
-- `docs/project-phases.md` - Detailed task lists for each project
-- `docs/ai-concepts-reference.md` - Conceptual explanations and resources
-
-## Current Status (2025-12-29)
-
-| Project | Status | Location |
-|---------|--------|----------|
-| Calendar Automaton | **Active** - feature parity, then publish | `calendar-automaton/` |
-| Calendar Transit CLI | ✓ Complete (proof-of-concept) | `archive/calendar-cli-python/` |
-| Investment Email Processing | Next | `investment-db-experiments/` |
-| Agent/Chatbot | Later | `chatbot-rebuild/` |
-
-## Current Projects
-
-### calendar-automaton/
-Calendar Automaton — Chrome extension that automatically creates transit events before/after meetings using Google Calendar + Routes APIs.
+## Quick Start
 
 ```bash
-cd calendar-automaton
-bun install
-bun run build      # Build extension
-bun run test       # Test event processing (CLI mode)
-bun run test --execute  # Actually create events
-# Load unpacked extension from dist/ in Chrome
+bun install              # Install dependencies
+bun run build            # Build extension to dist/
+bun test                 # Run unit tests
+bun run test             # CLI integration test (dry run)
+bun run test --execute   # Actually create events
+bun run check            # Lint + typecheck
 ```
-Setup: See `calendar-automaton/CLAUDE.md`
 
-### archive/calendar-cli-python/
-The original Python CLI proof-of-concept. Kept as reference for porting remaining features (traffic-aware routing, blended traffic models).
+**Load in Chrome:** Go to `chrome://extensions`, enable Developer mode, click "Load unpacked", select `dist/`.
+
+## First-Time Setup
+
+1. **Install dependencies:** `bun install`
+
+2. **Create config file:**
+   ```bash
+   cp src/config.example.ts src/config.ts
+   ```
+   Fill in:
+   - `ROUTES_API_KEY` - From Google Cloud Console (enable Routes API)
+   - `OAUTH_CLIENT_ID` and `OAUTH_CLIENT_SECRET` - OAuth client (Web application type)
+   - `DEFAULT_SETTINGS.homeAddress` - Your home address
+
+3. **Build and load:**
+   ```bash
+   bun run build
+   # Load dist/ in Chrome as unpacked extension
+   # Note the extension ID shown in chrome://extensions
+   ```
+
+4. **Configure OAuth redirect:**
+   - Go to [Google Cloud Console](https://console.cloud.google.com) → APIs & Services → Credentials
+   - Edit your OAuth client → Authorized redirect URIs → Add:
+     ```
+     https://<your-extension-id>.chromiumapp.org/
+     ```
+
+## CLI Test Runner
+
+The CLI test runner lets you test the event processing logic without reloading Chrome.
+
+**First-time setup:**
+```bash
+# Copy OAuth tokens from an existing session
+cp ../_past-projects/2025-calendar-cli/token.json cli-tokens.json
+```
+
+**Usage:**
+```bash
+bun run test                    # Dry run with console table
+bun run test --json             # JSON output
+bun run test --execute          # Actually create events
+bun run test --days 14          # Scan 2 weeks ahead
+bun run test --home "123 Main"  # Override home address
+```
+
+## Architecture
+
+```
+src/
+├── background.ts         # Service worker (OAuth persistence)
+├── calendarService.ts    # Google Calendar API
+├── transitCalculator.ts  # Google Routes API (travel times)
+├── eventProcessor.ts     # Core logic (filtering, transit calculation)
+├── eventProcessor.test.ts # Unit tests
+├── types.ts              # Type definitions
+├── utils.ts              # Utility functions
+├── config.ts             # Your credentials (gitignored)
+└── cli/
+    ├── testRunner.ts     # CLI integration test
+    └── cliAuth.ts        # OAuth for CLI (reads cli-tokens.json)
+
+popup/                    # Extension popup UI
+icons/                    # Extension icons
+```
+
+## Testing
+
+Two test modes:
+
+| Command | What it tests | Needs |
+|---------|---------------|-------|
+| `bun test` | Unit tests (pure functions) | Nothing |
+| `bun run test` | Full integration (real API calls) | `cli-tokens.json` |
+
+## Linting Philosophy
+
+Biome is configured pragmatically for active solo development:
+
+- `noConsoleLog: off` - Useful for debugging during development
+- `noForEach: off` - forEach is readable; perf isn't critical here
+- `noUnusedParameters: false` - API signatures may require unused params
+
+**When to tighten:** After Chrome Web Store publish, consider enabling:
+- `noUnusedLocals: true`
+- `noUnusedParameters: true`
+
+## Key Files
+
+- `src/config.ts` - Your credentials (gitignored, copy from config.example.ts)
+- `cli-tokens.json` - OAuth tokens for CLI test runner (gitignored)
+- `dist/` - Built extension (load this in Chrome)
+
+## References
+
+- `docs/ROADMAP.md` - Project status and next steps
+- `docs/project-phases.md` - Detailed implementation notes
+- `../_meta/docs/FOUNDATIONS.md` - Philosophy and conventions
+- `../_past-projects/2025-calendar-cli/` - Original Python CLI (reference)
+
+## GitHub
 
 Published: [robotic-sean-public](https://github.com/beingSCK/robotic-sean-public)
-
-### investment-db-experiments/
-Investment portfolio tracker using SQLite. Goal: Parse emails from Google Takeout, build a RAG pipeline for natural language queries about investments.
-
-```bash
-cd investment-db-experiments && python create_investment_db.py
-```
-
-Schema includes: entities, investments, documents (staging table for emails/PDFs), transactions.
-
-### chatbot-rebuild/
-Learning project to understand agent patterns by rebuilding a chatbot from scratch. Contains reference material (`social-manager-agent-unpacked.ts`) showing the agentic loop pattern. Goal: recreate this functionality ourselves to deeply understand how agents work.
-
-## Conventions
-
-**Commit messages:** Short subject line (~50 chars), optional body for context when helpful. Do NOT include "Co-Authored-By" or other AI attribution in commit messages.
-
-**Writing style:** Avoid em dashes (—). They signal "AI slop" to readers. Use hyphens (-), semicolons, or restructure sentences instead.
-
-**TODO/DRAFT markers:** Use consistently across code and prose files:
-- `TODO:` - Something that needs to be done
-- `FIXME:` - Something broken that needs fixing
-- `DRAFT:` - AI-generated content needing human review
-
-In code files, use standard comments (`// TODO:`). In markdown files, use a visible blockquote at the top:
-```markdown
-> **DRAFT:** Claude wrote this. Sean hasn't validated the premises here.
-```
-This keeps drafts visible to readers now; we can convert to HTML comments later via script when finalized.
-
-**Work journal:** At the end of each session, update `work-journal/YYYY-MM-DD.md` with completed tasks, decisions made, things learned, and next steps. This folder is gitignored.
-
-## Architecture Notes
-
-- **Documents table pattern:** All source materials (emails, PDFs) flow through a staging table with `needs_review` flag before structured data extraction
-- **Agent pattern reference:** `chatbot-rebuild/social-manager-agent-unpacked.ts` demonstrates the core agentic loop (lines 314-347): call LLM → execute tool calls → append results → repeat until done
