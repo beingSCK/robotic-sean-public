@@ -535,6 +535,9 @@ export async function calculateTransitEvents(
 
     onProgress?.(`Processing ${dateStr}...`);
 
+    // TODO(stay-events): Replace static home with dynamic home location.
+    // Check for Stay events (hotel, airbnb) on this date and use that as "home" instead.
+    // See Python CLI transit_calculator.py for reference implementation.
     let previousLocation = settings.homeAddress;
     let previousLocationName = "Home";
     let previousEventEnd: Date | null = null; // Track when previous event ends for departure time

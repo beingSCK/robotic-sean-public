@@ -62,6 +62,7 @@ These items are nice-to-have polish, not blockers for initial publish:
 - [ ] Configurable low-transit location patterns in settings UI
 - [ ] Progress indicators during scan
 - [ ] Onboarding flow for first-time users
+- [ ] Timezone support (currently uses local machine timezone) - see `src/utils.ts` TODO
 
 ### Recommended Next Session
 

@@ -39,6 +39,10 @@ function createRouteResult(
 /**
  * Select the best route based on transit vs driving comparison.
  * Returns null only if both routes are null.
+ *
+ * TODO(blended-traffic): Enhance driving estimates with blended traffic models.
+ * Query both BEST_GUESS and PESSIMISTIC, blend with 75% pessimistic weight when
+ * difference exceeds 25%. See Python CLI _get_blended_driving_time() for reference.
  */
 function selectBestRoute(
   transitResult: { durationSeconds: number; distanceMeters: number } | null,
@@ -213,6 +217,10 @@ async function callRoutesApi(
 /**
  * Get travel time between two addresses.
  * Tries TRANSIT first, falls back to DRIVE if transit takes too long or isn't available.
+ *
+ * TODO(transit-mode): Replace forceDrive boolean with TransitMode enum.
+ * Support 'always_driving' | 'always_transit' | 'default' for user-selectable mode.
+ * Update signature: getTransitTime(origin, destination, mode: TransitMode, departureTime?)
  *
  * @param origin Starting address
  * @param destination Ending address
