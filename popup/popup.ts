@@ -12,6 +12,7 @@ import {
 import { fetchEvents, insertTransitEvents } from "../src/calendarService.ts";
 import { DEFAULT_SETTINGS } from "../src/config.ts";
 import { calculateTransitEvents } from "../src/eventProcessor.ts";
+import { UserSettingsSchema } from "../src/types.ts";
 import type { TransitEvent, UserSettings } from "../src/types.ts";
 
 // DOM Elements
@@ -37,11 +38,25 @@ let currentSettings: UserSettings = { ...DEFAULT_SETTINGS };
 
 /**
  * Load settings from Chrome storage.
+ * Uses Zod schema validation to ensure data integrity.
  */
 async function loadSettings(): Promise<UserSettings> {
+  // Get the keys we care about from storage
+  const keys = Object.keys(DEFAULT_SETTINGS);
+
   return new Promise((resolve) => {
-    chrome.storage.sync.get(DEFAULT_SETTINGS, (result) => {
-      resolve(result as UserSettings);
+    chrome.storage.sync.get(keys, (result) => {
+      // Merge with defaults for any missing keys
+      const merged = { ...DEFAULT_SETTINGS, ...result };
+
+      // Validate with Zod schema, fall back to defaults if invalid
+      const parsed = UserSettingsSchema.safeParse(merged);
+      if (parsed.success) {
+        resolve(parsed.data);
+      } else {
+        console.warn("Invalid settings in storage, using defaults:", parsed.error);
+        resolve({ ...DEFAULT_SETTINGS });
+      }
     });
   });
 }

@@ -2,6 +2,58 @@
  * Type definitions for Calendar Transit Extension
  */
 
+import { z } from "zod";
+
+// =============================================================================
+// Zod Schemas - Runtime validation for external data (Chrome storage, APIs)
+// =============================================================================
+
+/**
+ * Google Calendar color IDs (1-11 as strings)
+ * These map to specific colors in the Google Calendar UI:
+ * 1=Lavender, 2=Sage, 3=Grape, 4=Flamingo, 5=Banana,
+ * 6=Tangerine, 7=Peacock, 8=Graphite, 9=Blueberry, 10=Basil, 11=Tomato
+ */
+export const CalendarColorIdSchema = z.enum([
+  "1",
+  "2",
+  "3",
+  "4",
+  "5",
+  "6",
+  "7",
+  "8",
+  "9",
+  "10",
+  "11",
+]);
+
+/**
+ * Schema for user settings stored in chrome.storage.sync
+ * Used to validate data from storage before trusting it
+ */
+export const UserSettingsSchema = z.object({
+  homeAddress: z.string(),
+  daysForward: z.number(),
+  transitColorId: CalendarColorIdSchema,
+  lowTransitLocations: z.array(z.string()).optional(),
+  homeAirports: z.array(z.string()).optional(),
+  detectTrips: z.boolean().optional(),
+});
+
+/**
+ * Schema for OAuth token data stored in chrome.storage.local
+ */
+export const TokenDataSchema = z.object({
+  access_token: z.string(),
+  refresh_token: z.string().optional(),
+  expires_at: z.number(),
+});
+
+// =============================================================================
+// TypeScript Types
+// =============================================================================
+
 // Storage keys - single source of truth for chrome.storage keys
 export const STORAGE_KEYS = {
   OAUTH_TOKENS: "oauth_tokens",

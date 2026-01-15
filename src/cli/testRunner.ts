@@ -93,8 +93,8 @@ function formatEventForTable(event: TransitEvent): {
 
   // Extract route from summary (e.g., "TRANSIT: Home → Destination")
   const routeMatch = event.summary.match(/^(TRANSIT|DRIVE): (.+)$/);
-  const route = routeMatch ? routeMatch[2] : event.summary;
-  const mode = routeMatch ? routeMatch[1].toLowerCase() : "unknown";
+  const route = routeMatch?.[2] ?? event.summary;
+  const mode = routeMatch?.[1]?.toLowerCase() ?? "unknown";
 
   return {
     date: startTime.toLocaleDateString("en-US", {

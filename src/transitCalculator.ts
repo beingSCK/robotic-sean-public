@@ -63,30 +63,36 @@ function selectBestRoute(
     );
   }
 
-  // Both available - compare
-  const transitMinutes = toMinutes(transitResult?.durationSeconds);
-  const driveMinutes = toMinutes(driveResult?.durationSeconds);
+  // Both available - compare (we've proven both are non-null via early returns)
+  // Use explicit check that TypeScript understands for narrowing
+  if (transitResult && driveResult) {
+    const transitMinutes = toMinutes(transitResult.durationSeconds);
+    const driveMinutes = toMinutes(driveResult.durationSeconds);
 
-  // If transit is reasonable, prefer it
-  if (transitMinutes <= TRANSIT_FALLBACK_THRESHOLD) {
+    // If transit is reasonable, prefer it
+    if (transitMinutes <= TRANSIT_FALLBACK_THRESHOLD) {
+      return createRouteResult(
+        transitResult.durationSeconds,
+        transitResult.distanceMeters,
+        "transit",
+      );
+    }
+
+    // Transit is slow - use whichever is faster
+    if (driveMinutes < transitMinutes) {
+      return createRouteResult(driveResult.durationSeconds, driveResult.distanceMeters, "driving");
+    }
+
+    // Transit is still faster or equal, use transit
     return createRouteResult(
-      transitResult?.durationSeconds,
-      transitResult?.distanceMeters,
+      transitResult.durationSeconds,
+      transitResult.distanceMeters,
       "transit",
     );
   }
 
-  // Transit is slow - use whichever is faster
-  if (driveMinutes < transitMinutes) {
-    return createRouteResult(driveResult?.durationSeconds, driveResult?.distanceMeters, "driving");
-  }
-
-  // Transit is still faster or equal, use transit
-  return createRouteResult(
-    transitResult?.durationSeconds,
-    transitResult?.distanceMeters,
-    "transit",
-  );
+  // Unreachable due to earlier checks, but TypeScript needs this
+  return null;
 }
 
 /**

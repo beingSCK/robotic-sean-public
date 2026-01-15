@@ -7,17 +7,30 @@
 
 import { OAUTH_CLIENT_ID, OAUTH_CLIENT_SECRET } from "./config.ts";
 import type { TokenData } from "./types.ts";
-import { STORAGE_KEYS } from "./types.ts";
+import { STORAGE_KEYS, TokenDataSchema } from "./types.ts";
 
 const TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
 
 /**
  * Get stored tokens from chrome.storage.local.
+ * Uses Zod schema validation to ensure token data integrity.
  */
 async function getStoredTokens(): Promise<TokenData | null> {
   return new Promise((resolve) => {
     chrome.storage.local.get([STORAGE_KEYS.OAUTH_TOKENS], (result) => {
-      resolve(result[STORAGE_KEYS.OAUTH_TOKENS] || null);
+      const rawData = result[STORAGE_KEYS.OAUTH_TOKENS];
+      if (!rawData) {
+        resolve(null);
+        return;
+      }
+      // Validate with Zod schema
+      const parsed = TokenDataSchema.safeParse(rawData);
+      if (parsed.success) {
+        resolve(parsed.data);
+      } else {
+        console.warn("Invalid token data in storage:", parsed.error);
+        resolve(null);
+      }
     });
   });
 }

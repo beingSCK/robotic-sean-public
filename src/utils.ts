@@ -85,7 +85,7 @@ export function isSameLocation(loc1: string, loc2: string): boolean {
  */
 export function parseDurationSeconds(durationStr: string): number {
   const match = durationStr.match(/^(\d+)s$/);
-  if (!match) {
+  if (!match || !match[1]) {
     throw new Error(`Invalid duration format: ${durationStr}`);
   }
   return Number.parseInt(match[1], 10);
