@@ -22,6 +22,7 @@ import type {
   RouteResult,
   SkipResult,
   TransitEvent,
+  TransitPreference,
   UserSettings,
 } from "./types.ts";
 import { RoutesApiError, SkipReason } from "./types.ts";
@@ -567,10 +568,17 @@ export async function calculateTransitEvents(
         logSkip(onProgress, eventName, `same location as ${previousLocationName}`);
       } else {
         try {
-          // Check if origin or destination is a low-transit location
-          const forceDrive =
-            isLowTransitLocation(previousLocation, settings.lowTransitLocations) ||
-            isLowTransitLocation(location, settings.lowTransitLocations);
+          // Determine effective transit preference
+          // User preference takes priority, but low-transit locations override to driving in default mode
+          let effectivePreference: TransitPreference = settings.transitPreference;
+          if (settings.transitPreference === "default") {
+            const isLowTransit =
+              isLowTransitLocation(previousLocation, settings.lowTransitLocations) ||
+              isLowTransitLocation(location, settings.lowTransitLocations);
+            if (isLowTransit) {
+              effectivePreference = "always_driving";
+            }
+          }
 
           // Compute departure time for traffic-aware routing
           // If we have a previous event end time, use that; otherwise estimate from event start
@@ -581,7 +589,7 @@ export async function calculateTransitEvents(
           const transitResult = await getTransitTime(
             previousLocation,
             location,
-            forceDrive,
+            effectivePreference,
             departureTime,
           );
 
@@ -662,16 +670,22 @@ export async function calculateTransitEvents(
         const lastEventEnd = parseDateTime(lastEvent.end.dateTime);
         let returnTransit: RouteResult | null;
         try {
-          // Check if origin or destination is a low-transit location
-          const forceDrive =
-            isLowTransitLocation(previousLocation, settings.lowTransitLocations) ||
-            isLowTransitLocation(settings.homeAddress, settings.lowTransitLocations);
+          // Determine effective transit preference for return-home route
+          let effectivePreference: TransitPreference = settings.transitPreference;
+          if (settings.transitPreference === "default") {
+            const isLowTransit =
+              isLowTransitLocation(previousLocation, settings.lowTransitLocations) ||
+              isLowTransitLocation(settings.homeAddress, settings.lowTransitLocations);
+            if (isLowTransit) {
+              effectivePreference = "always_driving";
+            }
+          }
 
           // Use last event end as departure time for traffic-aware routing
           returnTransit = await getTransitTime(
             previousLocation,
             settings.homeAddress,
-            forceDrive,
+            effectivePreference,
             lastEventEnd,
           );
         } catch (error) {

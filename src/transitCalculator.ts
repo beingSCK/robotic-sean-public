@@ -5,7 +5,7 @@
 
 import { ROUTES_API_KEY, ROUTES_API_TIMEOUT_MS, TRANSIT_FALLBACK_THRESHOLD } from "./config.ts";
 import { RoutesApiError } from "./types.ts";
-import type { RouteResult } from "./types.ts";
+import type { RouteResult, TransitPreference } from "./types.ts";
 import { parseDurationSeconds, toMinutes, validateAddress } from "./utils.ts";
 
 const ROUTES_API_ENDPOINT = "https://routes.googleapis.com/directions/v2:computeRoutes";
@@ -44,7 +44,7 @@ function createRouteResult(
  * Query both BEST_GUESS and PESSIMISTIC, blend with 75% pessimistic weight when
  * difference exceeds 25%. See Python CLI _get_blended_driving_time() for reference.
  */
-function selectBestRoute(
+export function selectBestRoute(
   transitResult: { durationSeconds: number; distanceMeters: number } | null,
   driveResult: { durationSeconds: number; distanceMeters: number } | null,
 ): RouteResult | null {
@@ -216,15 +216,13 @@ async function callRoutesApi(
 
 /**
  * Get travel time between two addresses.
- * Tries TRANSIT first, falls back to DRIVE if transit takes too long or isn't available.
- *
- * TODO(transit-mode): Replace forceDrive boolean with TransitMode enum.
- * Support 'always_driving' | 'always_transit' | 'default' for user-selectable mode.
- * Update signature: getTransitTime(origin, destination, mode: TransitMode, departureTime?)
  *
  * @param origin Starting address
  * @param destination Ending address
- * @param forceDrive If true, skip transit and only use driving mode
+ * @param preference User's preference for travel mode selection:
+ *   - 'default': Smart mode - prefer transit, fall back to driving if transit > 80 min
+ *   - 'always_driving': Always use driving directions
+ *   - 'always_transit': Always use public transit directions
  * @param departureTime Optional departure time for traffic-aware routing
  * @throws RoutesApiError on API failures (can be caught and handled by caller)
  * @returns RouteResult or null if no route exists
@@ -232,11 +230,11 @@ async function callRoutesApi(
 export async function getTransitTime(
   origin: string,
   destination: string,
-  forceDrive = false,
+  preference: TransitPreference = "default",
   departureTime?: Date,
 ): Promise<RouteResult | null> {
-  // If force drive, skip transit entirely
-  if (forceDrive) {
+  // Always driving: skip transit entirely
+  if (preference === "always_driving") {
     const driveResult = await callRoutesApi(origin, destination, "DRIVE", departureTime);
     if (driveResult) {
       return createRouteResult(driveResult.durationSeconds, driveResult.distanceMeters, "driving");
@@ -244,6 +242,20 @@ export async function getTransitTime(
     return null;
   }
 
+  // Always transit: skip driving entirely
+  if (preference === "always_transit") {
+    const transitResult = await callRoutesApi(origin, destination, "TRANSIT", departureTime);
+    if (transitResult) {
+      return createRouteResult(
+        transitResult.durationSeconds,
+        transitResult.distanceMeters,
+        "transit",
+      );
+    }
+    return null;
+  }
+
+  // Default mode: smart fallback logic
   // Try TRANSIT first (departure time helps with schedule-based routing)
   const transitResult = await callRoutesApi(origin, destination, "TRANSIT", departureTime);
 

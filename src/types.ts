@@ -29,6 +29,15 @@ export const CalendarColorIdSchema = z.enum([
 ]);
 
 /**
+ * User's preference for how to select between travel modes
+ * - 'default': Smart mode - prefer transit, fall back to driving if transit > 80 min
+ * - 'always_driving': Always use driving directions
+ * - 'always_transit': Always use public transit directions
+ */
+export const TransitPreferenceSchema = z.enum(["default", "always_driving", "always_transit"]);
+export type TransitPreference = z.infer<typeof TransitPreferenceSchema>;
+
+/**
  * Schema for user settings stored in chrome.storage.sync
  * Used to validate data from storage before trusting it
  */
@@ -36,6 +45,7 @@ export const UserSettingsSchema = z.object({
   homeAddress: z.string(),
   daysForward: z.number(),
   transitColorId: CalendarColorIdSchema,
+  transitPreference: TransitPreferenceSchema.default("default"),
   lowTransitLocations: z.array(z.string()).optional(),
   homeAirports: z.array(z.string()).optional(),
   detectTrips: z.boolean().optional(),
@@ -115,6 +125,7 @@ export interface UserSettings {
   homeAddress: string;
   daysForward: number;
   transitColorId: string;
+  transitPreference: TransitPreference; // User's preference for travel mode selection
   lowTransitLocations?: string[]; // Location patterns where transit options are limited (force driving)
   homeAirports?: string[]; // Airports that indicate outbound flights (for trip detection)
   detectTrips?: boolean; // Whether to enable trip date detection
