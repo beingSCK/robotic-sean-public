@@ -44,7 +44,7 @@ function createRouteResult(
  * Query both BEST_GUESS and PESSIMISTIC, blend with 75% pessimistic weight when
  * difference exceeds 25%. See Python CLI _get_blended_driving_time() for reference.
  */
-function selectBestRoute(
+export function selectBestRoute(
   transitResult: { durationSeconds: number; distanceMeters: number } | null,
   driveResult: { durationSeconds: number; distanceMeters: number } | null,
 ): RouteResult | null {
