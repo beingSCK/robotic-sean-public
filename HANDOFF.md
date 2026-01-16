@@ -1,107 +1,98 @@
-# HANDOFF - Calendar Automaton
+# HANDOFF - Calendar Automaton ("Commute Calendar")
 _Last updated: 2026-01-15_
 
 ## Session Recap
 
-Planned to fix TypeScript strict mode errors. Executed successfully using Zod for runtime validation. Created comprehensive Chrome Web Store submission plan that extends beyond just type fixes - now includes transit mode feature and thorough test coverage. Created PR #1 awaiting code review before merge.
+Completed Phases 1-3 of Chrome Web Store submission plan. All code is merged to main. Test helper CLI tools created for manual testing workflows. Ready for Phase 4: Chrome Web Store submission.
 
-## What Was Implemented
+## What Was Implemented (This Session)
 
-**TypeScript Strict Mode Fixes (Commit: `0ba4e91`):**
-- Installed Zod for runtime validation of external data
-- Created three validation schemas in `src/types.ts`:
-  - `UserSettingsSchema` - Chrome storage settings validation
-  - `TokenDataSchema` - OAuth token structure validation
-  - `CalendarColorIdSchema` - Google Calendar color ID validation (1-11 as strings)
-- Fixed all 16 TypeScript errors across 6 files using `safeParse()` pattern
-- Refactored `selectBestRoute()` to use explicit narrowing instead of non-null assertions
-- All checks pass: `bun run check` (0 errors), `bun test` (all pass), `bun run build` (succeeds)
+**PR #2: Transit Preference Feature (Merged)**
+- Added `TransitPreference` type: `'default' | 'always_driving' | 'always_transit'`
+- Updated UI with "Travel Mode" dropdown in popup
+- Wired through eventProcessor.ts with smart override logic
+- 6 unit tests for route selection logic
+- Commit: `68b5eb8`
 
-**PR #1 Created:**
-- https://github.com/beingSCK/robotic-sean-public/pull/1
-- Title: "Fix TypeScript strict mode errors with Zod runtime validation"
-- Status: Awaiting `/code-review` before merge
-
-**Chrome Web Store Plan Created:**
-- Location: `~/.claude/plans/lucky-sniffing-pascal.md`
-- Covers 4 phases: TypeScript fixes (done), test suite, transit mode feature, store submission
-- Extension name decided: "Commute Calendar"
-- Quality gate established: PR + `/code-review` before each merge to main
-
-## Ideas Considered (but deferred)
-
-**Immediate merge without code review:**
-Could merge PR #1 directly since all checks pass. Deferred to establish quality gate pattern - `/code-review` provides ensemble validation (4 agents, 80% confidence threshold) that catches issues single-pass review misses. Worth the extra step for learning and rigor.
-
-**Skip transit mode feature:**
-Could go straight to Chrome Web Store submission with current "smart default" behavior. Deferred because user control over driving vs transit is common feedback for routing tools. Adding it now (while codebase is small) is easier than post-publish.
-
-**Manual testing only:**
-Could rely on Chrome extension testing without expanding unit tests. Deferred in favor of "test first, then feature" approach (Phase 2 before Phase 3). Testing `transitCalculator.ts` logic in isolation with mocked fetch prevents API dependency and establishes good patterns.
-
-## Current Direction
-
-**Ship to Chrome Web Store in phases.** The extension has working features, but needs:
-1. Code review gate (establish quality pattern)
-2. Test coverage for transit logic (safety net before feature work)
-3. Transit mode selection (user control over driving/transit/smart)
-4. Store assets and submission (make it public)
-
-This phased approach balances completeness with momentum - each phase is independently mergeable and adds value.
-
-## Recommended Next Action
-
-**Run `/code-review` on PR #1**
-
-Why this is the highest-value next step:
-- Establishes quality gate pattern for future PRs
-- Validates TypeScript fixes before merge (external validation, not just local checks)
-- Practices a real-world team workflow (PR + review + merge)
-- Low risk: changes are type-safety focused, all checks already pass
-
-How to do it:
-```bash
-# From calendar-projects directory
-/code-review --pr https://github.com/beingSCK/robotic-sean-public/pull/1
-```
-
-If issues found: Fix them, push, re-run `/code-review`
-If clean: Merge via `gh pr merge --squash` or GitHub UI
-
-After merge:
-1. Checkout main, pull latest
-2. Create new branch for Phase 2: `git checkout -b feature/transit-mode-selection`
-3. Start Phase 2 work (test suite for transitCalculator.ts)
-
-## Alternatives
-
-**Skip `/code-review` and merge now:**
-Makes sense if you want to maintain velocity and trust the local checks. All tests pass, TypeScript is clean, build succeeds. But you'd miss the learning opportunity of ensemble validation and the confidence boost of external review. Since this is a learning project, the quality gate is worth experiencing.
-
-**Jump to Phase 3 (transit mode feature) without Phase 2 (tests):**
-Makes sense if you're confident in the existing transit logic and want to ship faster. Current code works and is already tested in the Chrome extension. But adding tests first creates a safety net for refactoring the function signature in Phase 3. Since `getTransitTime()` is changing from `forceDrive: boolean` to `mode: TransitMode`, having tests prevents regressions.
-
-**Go straight to Phase 4 (Chrome Web Store):**
-Makes sense if you want to ship the MVP and iterate post-publish. Current features (traffic-aware routing, event skipping) are solid. But the transit mode feature addresses a common user need ("I don't have a car" or "I always drive"), and adding it pre-publish avoids migration complexity later.
-
-## Commands Reference
-
-```bash
-bun install          # Install dependencies
-bun run build        # Build extension to dist/
-bun test             # Run unit tests
-bun run test         # CLI integration test (needs cli-tokens.json)
-bun run check        # Full check (types + lint)
-```
+**PR #3: Test Helper CLI Tools (Merged)**
+- `src/cli/test-helpers/createTestEvents.ts` - Creates 13 test events anchored to "next Monday"
+- `src/cli/test-helpers/cleanupTestEvents.ts` - Deletes test events with safety guardrails
+- Both support `--help` flag
+- Cleanup supports `--include-transit` to delete derived transit events by time proximity
+- Commit: `745a38f`
 
 ## Current State
 
-**Branch:** `feature/traffic-aware-routing` (5 commits ahead of main, pushed to origin)
+**Branch:** `main` at commit `745a38f`
 
-**PR #1:** https://github.com/beingSCK/robotic-sean-public/pull/1 (awaiting review)
+**All tests pass:** `bun test` (14 pass, 12 todo), `bun run check` (0 errors)
 
-**Uncommitted changes:** `alias-for-sck-local-dropbox` (local symlink, not project-relevant)
+**Extension:** Fully functional with:
+- Traffic-aware routing (transit vs driving fallback)
+- User-selectable transit preference
+- Event skipping (Zoom, conferenceData, graphite/hold, no location)
+- Test helper tools for manual testing
 
-**Plan file:** `~/.claude/plans/lucky-sniffing-pascal.md` (comprehensive 4-phase Chrome Web Store submission plan)
+## Recommended Next Action
 
-**Next milestone:** Merge PR #1, then Phase 2 (test suite) → Phase 3 (transit mode feature) → Phase 4 (store submission)
+**Phase 4: Chrome Web Store Submission**
+
+1. **Create store assets:**
+   - 128x128 icon (already have icons/, may need resize)
+   - 1280x800 screenshot showing extension popup + calendar with transit events
+   - 440x280 small promo tile
+   - 1400x560 large promo tile (optional)
+
+2. **Write privacy policy:**
+   - Extension accesses Google Calendar (read/write)
+   - Uses Google Routes API for transit calculations
+   - No data stored externally; all settings in Chrome local storage
+   - Host on GitHub Pages or similar
+
+3. **Update manifest.json:**
+   - Change name from "Calendar Transit Extension" to "Commute Calendar"
+   - Verify permissions are minimal
+
+4. **Submit to Chrome Web Store:**
+   - Create developer account ($5 one-time fee)
+   - Fill out listing (description, category, etc.)
+   - Submit for review (typically 1-3 days)
+
+## Test Helper Commands
+
+```bash
+# Create test events (13 events starting next Monday)
+bun run src/cli/test-helpers/createTestEvents.ts
+
+# Run Calendar Automaton to create transit events
+bun run test --execute --days 10
+
+# Cleanup test events only
+bun run src/cli/test-helpers/cleanupTestEvents.ts
+
+# Cleanup test events + derived transit events
+bun run src/cli/test-helpers/cleanupTestEvents.ts --include-transit
+
+# Show help for any command
+bun run src/cli/test-helpers/createTestEvents.ts --help
+bun run src/cli/test-helpers/cleanupTestEvents.ts --help
+bun run test --help
+```
+
+## Technical Debt (Low Priority)
+
+**Test script naming confusion:**
+- `bun test` (unit tests) vs `bun run test` (integration) are confusingly similar
+- Consider renaming to `calendar:scan` or `test:e2e` when there's time
+
+## Key Files
+
+- `src/cli/test-helpers/` - Test event creation/cleanup tools
+- `src/transitCalculator.ts` - Route calculation with preference support
+- `src/eventProcessor.ts` - Core event processing logic
+- `popup/` - Extension UI with transit preference dropdown
+- `~/.claude/plans/lucky-sniffing-pascal.md` - Original 4-phase plan (Phases 1-3 complete)
+
+## GitHub
+
+Repository: [robotic-sean-public](https://github.com/beingSCK/robotic-sean-public)
